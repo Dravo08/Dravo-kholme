@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Owner Login – Dravo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #f3e9dc, #fff7ef);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .login-wrapper {
+      background-color: #fff;
+      padding: 30px 25px;
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      width: 90%;
+      max-width: 360px;
+      text-align: center;
+    }
+
+    .login-wrapper h2 {
+      margin-bottom: 0.3rem;
+      font-size: 1.6rem;
+      color: #5d4037;
+    }
+
+    .login-wrapper p {
+      font-size: 0.9rem;
+      color: #7b5e52;
+      margin-bottom: 1.5rem;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px 14px;
+      margin-top: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #a1887f;
+      box-shadow: 0 0 0 2px rgba(161, 136, 127, 0.2);
+    }
+
+    button {
+      background-color: #6d4c41;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #5d4037;
+    }
+
+    #message {
+      color: red;
+      font-size: 0.9rem;
+      margin-top: 10px;
+    }
+
+    .logo {
+      margin-bottom: 20px;
+    }
+
+    .logo img {
+      height: 50px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="logo">
+      <!-- Optional: Replace the image link below with your Dravo logo -->
+      <img src="https://raw.githubusercontent.com/AjayDevgan1/Menu.digital/main/20250719_095724.jpg" alt="DRAVO" />
+    </div>
+    <h2>Welcome to Dravo</h2>
+    <p>Owner Panel Login</p>
+
+    <form id="login-form">
+      <input type="email" id="email" placeholder="📧 Email" required />
+      <input type="password" id="password" placeholder="🔒 Password" required />
+      <button type="submit">Login</button>
+      <div id="message"></div>
+    </form>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyATGDe4NI75RSny4ZbE3WDtaUoUivjv3E8",
+      authDomain: "digital-menu-wooden.firebaseapp.com",
+      projectId: "digital-menu-wooden",
+      appId: "1:776717051891:web:c52bc347ba84434e839486"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const messageDiv = document.getElementById('message');
+      messageDiv.innerText = "";
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        if (user.email === "ajaya@menu.com") {
+          localStorage.setItem("role", "owner");
+          window.location.href = "owner.html";
+        } else {
+          messageDiv.innerText = "Not authorized for owner panel.";
+          await signOut(auth);
+        }
+      } catch (error) {
+        messageDiv.innerText = "Login failed: " + error.message;
+      }
+    });
+  </script>
+</body>
+</html>
