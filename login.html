@@ -129,7 +129,7 @@
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      if (user.email === "Kholme@owner.com") {
+      if (user.email === "kholme@owner.com") {
         localStorage.setItem("role", "owner");
         window.location.href = "owner.html";
       } else {
