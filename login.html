@@ -99,41 +99,47 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-analytics.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyATGDe4NI75RSny4ZbE3WDtaUoUivjv3E8",
-      authDomain: "digital-menu-wooden.firebaseapp.com",
-      projectId: "digital-menu-wooden",
-      appId: "1:776717051891:web:c52bc347ba84434e839486"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
+    authDomain: "kholme-menu1.firebaseapp.com",
+    databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
+    projectId: "kholme-menu1",
+    storageBucket: "kholme-menu1.firebasestorage.app",
+    messagingSenderId: "434798935284",
+    appId: "1:434798935284:web:527ae90b4d4833a30ff2a1",
+    measurementId: "G-9XG8BZ9YXK"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const auth = getAuth(app);
 
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
-      const messageDiv = document.getElementById('message');
-      messageDiv.innerText = "";
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const messageDiv = document.getElementById('message');
+    messageDiv.innerText = "";
 
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-        if (user.email === "ajaya@menu.com") {
-          localStorage.setItem("role", "owner");
-          window.location.href = "owner.html";
-        } else {
-          messageDiv.innerText = "Not authorized for owner panel.";
-          await signOut(auth);
-        }
-      } catch (error) {
-        messageDiv.innerText = "Login failed: " + error.message;
+      if (user.email === "Kholme@owner.com") {
+        localStorage.setItem("role", "owner");
+        window.location.href = "owner.html";
+      } else {
+        messageDiv.innerText = "Not authorized for owner panel.";
+        await signOut(auth);
       }
-    });
-  </script>
+    } catch (error) {
+      messageDiv.innerText = "Login failed: " + error.message;
+    }
+  });
+</script>
 </body>
 </html>
