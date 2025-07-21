@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Dravo – Owner Login</title>
+  <title>Dravo â€“ Owner Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
@@ -83,8 +83,8 @@
     <p>Owner Panel Login</p>
 
     <form id="login-form">
-      <input type="email" id="email" placeholder="📧 Email" required />
-      <input type="password" id="password" placeholder="🔒 Password" required />
+      <input type="email" id="email" placeholder="ðŸ“§ Email" required />
+      <input type="password" id="password" placeholder="ðŸ”’ Password" required />
       <button type="submit">Login</button>
       <div id="message"></div>
     </form>
@@ -94,7 +94,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-    // ✅ Firebase config
+    // âœ… Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
       authDomain: "kholme-menu1.firebaseapp.com",
@@ -126,7 +126,7 @@
 
         if (user.email === "kholme@owner.com") {
           localStorage.setItem("role", "owner");
-          window.location.href = "owner.html";  // ✅ Redirect
+          window.location.href = "owner.html";  // âœ… Redirect
         } else {
           messageDiv.innerText = "Not authorized for owner panel.";
           await signOut(auth);
