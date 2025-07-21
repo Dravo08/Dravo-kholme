@@ -274,7 +274,7 @@
   </style>
 </head>
 <body>
-  <header class="wood-header">🌿 Cafe Kholmay – Owner Panel</header>
+  <header class="wood-header"> ☕ Cafe Kholmay – Owner Panel</header>
 
   <!-- Sales Section -->
   <div class="section active" id="totalSales">
@@ -766,8 +766,24 @@ function createMenuCard(key, item) {
     console.log('New Category:', newCategory);
 
     if (!newName || isNaN(newPrice) || newPrice < 0 || !newCategory) {
-      console.log('Reloading menu items...');
-      loadMenuItems();
+  alert('Please enter valid item details.');
+  return;
+}
+
+try {
+  saveBtn.disabled = true;
+  await update(ref(db, `menu/${key}`), {
+    name: newName,
+    price: newPrice,
+    category: newCategory
+  });
+  alert('Item updated successfully.');
+  loadMenuItems();
+} catch (err) {
+  alert('Failed to update item.');
+  console.error('Save error:', err);
+} finally {
+  saveBtn.disabled = false;
     }
   });
 
