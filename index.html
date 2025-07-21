@@ -8,7 +8,7 @@
   :root {
     --bg-main: #1f1b18;
     --bg-card: #2b2622;
-    --accent: #d4a373; /* Warm cafÃ© gold */
+    --accent: #d4a373; /* Warm cafÃƒÂ© gold */
     --text-main: #fdfbf8;
     --text-muted: #c2b8af;
     --border: #3b342f;
@@ -334,7 +334,7 @@
     class="order-fab"
     onclick="document.getElementById('order-summary').scrollIntoView({behavior: 'smooth'})"
   >
-    ðŸ§¾
+🛒 
   </div>
 
   <footer>
@@ -432,7 +432,7 @@
             <label><input type="checkbox" id="select-${id}"> Add</label>
             <label>
               Qty:
-              <button type="button" class="qty-btn" data-action="decrease">âˆ’</button>
+              <button type="button" class="qty-btn" data-action="decrease">-</button>
               <input type="number" id="qty-${id}" min="0" value="0" disabled>
               <button type="button" class="qty-btn" data-action="increase">+</button>
             </label>
@@ -694,7 +694,7 @@
         );
         if (tableOrders.length === 0) {
           statusContainer.style.display = 'flex';
-          statusText.textContent = 'Order Status: No Active Orders';
+ statusText.textContent = 'Order Status: No Active Orders';
           statusLight.style.backgroundColor = 'grey';
           statusLight.style.animationPlayState = 'paused';
           statusLight.style.opacity = '0.5';
@@ -733,18 +733,25 @@
       });
     }
 
-    // Listen to changes on table number input and update status accordingly
-    tableInput.addEventListener('input', () => {
-      const val = tableInput.value.trim();
-      if (val && Number(val) >= 1) {
-        updateStatusForTable(Number(val));
-      } else {
-        statusContainer.style.display = 'none';
-      }
-    });
-
-    // Initial hide status container
+    // ✅ Listen to changes on table number input and store it
+tableInput.addEventListener('input', () => {
+  const val = tableInput.value.trim();
+  if (val && Number(val) >= 1) {
+    localStorage.setItem('currentTable', val); // ✅ Save to localStorage
+    updateStatusForTable(Number(val));
+  } else {
     statusContainer.style.display = 'none';
+  }
+});
+
+// ✅ Load from saved table number on page load
+const savedTable = localStorage.getItem('currentTable');
+if (savedTable) {
+  tableInput.value = savedTable;
+  updateStatusForTable(Number(savedTable));
+} else {
+  statusContainer.style.display = 'none';
+}
 
   </script>
 </body>
