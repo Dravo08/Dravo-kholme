@@ -361,41 +361,7 @@
     <button class="nav-button" data-section="salesHistory" aria-pressed="false">📅<br>History</button>
     <button class="nav-button" id="logoutBtn">⏏️<br>Logout</button>
   </nav>
- 
-  
-
-    // ====== SALES SECTION LOGIC ======
-
-    const ordersRef = ref(db, 'completedOrders');
-    const bestSellerEl = document.getElementById('best-seller');
-    const salesSummaryEl = document.getElementById('sales-summary');
-    const salesChartCanvas = document.getElementById('salesChart');
-    let salesChart;
-
-    const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function updateChart(labels, data, rawDates) {
-  if (salesChart) salesChart.destroy();
-  salesChart = new Chart(salesChartCanvas, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Total Sales (Rs.)',
-        data: data,
-        backgroundColor: 'rgba(129, 199, 132, 0.85)',
-        borderRadius: 8,         // slightly smaller radius
-        barThickness: 30,        // narrower bars
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        title: {
-          display: true,
-          text: 'Weekly Sales Overview',
-          font: { size: 10, weight: 'bold' },  // smaller titl<script type="module">
+ <script type="module">
   // ✅ Firebase SDKs
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-analytics.js";
@@ -463,7 +429,41 @@ function updateChart(labels, data, rawDates) {
     // Optional: trigger default section
     document.querySelector('.nav-button[data-section="orderSection"]')?.click();
   }
-          </script>e
+        
+  
+
+    // ====== SALES SECTION LOGIC ======
+
+    const ordersRef = ref(db, 'completedOrders');
+    const bestSellerEl = document.getElementById('best-seller');
+    const salesSummaryEl = document.getElementById('sales-summary');
+    const salesChartCanvas = document.getElementById('salesChart');
+    let salesChart;
+
+    const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function updateChart(labels, data, rawDates) {
+  if (salesChart) salesChart.destroy();
+  salesChart = new Chart(salesChartCanvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Total Sales (Rs.)',
+        data: data,
+        backgroundColor: 'rgba(129, 199, 132, 0.85)',
+        borderRadius: 8,         // slightly smaller radius
+        barThickness: 30,        // narrower bars
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: 'Weekly Sales Overview',
+          font: { size: 10, weight: 'bold' },  // smaller title
           color: '#2e7d32'
         },
         tooltip: {
