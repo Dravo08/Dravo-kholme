@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Owner Login – Dravo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dravo – Owner Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       margin: 0;
@@ -15,41 +15,45 @@
       height: 100vh;
     }
 
-    .login-wrapper {
+    .login-box {
       background-color: #fff;
-      padding: 30px 25px;
-      border-radius: 18px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-      width: 90%;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
       max-width: 360px;
+      width: 100%;
       text-align: center;
     }
 
-    .login-wrapper h2 {
-      margin-bottom: 0.3rem;
+    .login-box img {
+      height: 50px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin: 0 0 6px;
       font-size: 1.6rem;
       color: #5d4037;
     }
 
-    .login-wrapper p {
-      font-size: 0.9rem;
+    p {
+      margin-bottom: 20px;
       color: #7b5e52;
-      margin-bottom: 1.5rem;
     }
 
     input, button {
       width: 100%;
-      padding: 12px 14px;
+      padding: 12px;
       margin-top: 12px;
-      border-radius: 10px;
       border: 1px solid #ccc;
+      border-radius: 10px;
       font-size: 1rem;
       box-sizing: border-box;
     }
 
     input:focus {
-      outline: none;
       border-color: #a1887f;
+      outline: none;
       box-shadow: 0 0 0 2px rgba(161, 136, 127, 0.2);
     }
 
@@ -57,9 +61,8 @@
       background-color: #6d4c41;
       color: white;
       border: none;
-      font-weight: bold;
       cursor: pointer;
-      transition: background-color 0.3s ease;
+      font-weight: bold;
     }
 
     button:hover {
@@ -71,22 +74,11 @@
       font-size: 0.9rem;
       margin-top: 10px;
     }
-
-    .logo {
-      margin-bottom: 20px;
-    }
-
-    .logo img {
-      height: 50px;
-    }
   </style>
 </head>
 <body>
-  <div class="login-wrapper">
-    <div class="logo">
-      <!-- Optional: Replace the image link below with your Dravo logo -->
-      <img src="https://raw.githubusercontent.com/AjayDevgan1/Menu.digital/main/20250719_095724.jpg" alt="DRAVO" />
-    </div>
+  <div class="login-box">
+    <img src="https://raw.githubusercontent.com/AjayDevgan1/Menu.digital/main/20250719_095724.jpg" alt="Logo" />
     <h2>Welcome to Dravo</h2>
     <p>Owner Panel Login</p>
 
@@ -99,47 +91,54 @@
   </div>
 
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-analytics.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
-    authDomain: "kholme-menu1.firebaseapp.com",
-    databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
-    projectId: "kholme-menu1",
-    storageBucket: "kholme-menu1.firebasestorage.app",
-    messagingSenderId: "434798935284",
-    appId: "1:434798935284:web:527ae90b4d4833a30ff2a1",
-    measurementId: "G-9XG8BZ9YXK"
-  };
+    // ✅ Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
+      authDomain: "kholme-menu1.firebaseapp.com",
+      databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
+      projectId: "kholme-menu1",
+      storageBucket: "kholme-menu1.appspot.com",
+      messagingSenderId: "434798935284",
+      appId: "1:434798935284:web:527ae90b4d4833a30ff2a1",
+      measurementId: "G-9XG8BZ9YXK"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-  const auth = getAuth(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-  document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
+    const form = document.getElementById('login-form');
     const messageDiv = document.getElementById('message');
-    messageDiv.innerText = "";
 
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-      if (user.email === "kholme@owner.com") {
-        localStorage.setItem("role", "owner");
-        window.location.href = "owner.html";
-      } else {
-        messageDiv.innerText = "Not authorized for owner panel.";
-        await signOut(auth);
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      const password = document.getElementById('password').value.trim();
+
+      messageDiv.innerText = "";
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        if (user.email === "kholme@owner.com") {
+          localStorage.setItem("role", "owner");
+          window.location.href = "owner.html";  // ✅ Redirect
+        } else {
+          messageDiv.innerText = "Not authorized for owner panel.";
+          await signOut(auth);
+        }
+      } catch (error) {
+        if (error.code === "auth/too-many-requests") {
+          messageDiv.innerText = "Too many attempts. Try again later.";
+        } else {
+          messageDiv.innerText = "Login failed: " + error.message;
+        }
       }
-    } catch (error) {
-      messageDiv.innerText = "Login failed: " + error.message;
-    }
-  });
-</script>
+    });
+  </script>
 </body>
 </html>
