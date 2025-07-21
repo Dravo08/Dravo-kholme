@@ -2,10 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>cafe kholme - Order</title>
+  
   <style>
+  	
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    	
+      body {
+      	
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+
       background: #f4f1ea url('https://www.transparenttextures.com/patterns/wood-pattern.png') repeat;
       color: #3e4e3e;
       margin: 0;
@@ -241,8 +248,10 @@
 </head>
 <body>
   <header>
-    <h1>Cafe Kholme</h1>
-    <p> Fresh flavors from nature’s heart</p>
+    <h1>
+    <img src="https://dravo08.github.io/Dravo-kholme/IMG_20250721_073902.png" alt="Cafe Kholmay Logo" style="height: 160px; vertical-align: middle; margin-right: 40px;">
+    -MENU
+    
   </header>
 
   <input id="search-bar" placeholder="Search for food..." />
@@ -299,32 +308,32 @@
     
   </div>
 
-  <footer>Cafe Kholme &copy; 2025</footer>
+<footer>
+  <img src="https://dravo08.github.io/Dravo-kholme/20250719_095406.png" alt="Dravo Logo" style="height: 24px; vertical-align: middle; margin-right: 8px;">
+  DRAVO &copy; 2025
+</footer>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-  import {
-    getDatabase,
-    ref,
-    onValue,
-    push,
-    update,
-    remove
-  } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+  import { getDatabase, ref, onValue, push, update, remove } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 
-  // Replace these config values with your actual Firebase project config
+  // Your NEW Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
     authDomain: "kholme-menu1.firebaseapp.com",
     databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
     projectId: "kholme-menu1",
-    storageBucket: "kholme-menu1.appspot.com",
+    storageBucket: "kholme-menu1.firebasestorage.app",
     messagingSenderId: "434798935284",
-    appId: "1:434798935284:web:527ae90b4d4833a30ff2a1"
+    appId: "1:434798935284:web:527ae90b4d4833a30ff2a1",
+    measurementId: "G-9XG8BZ9YXK"
   };
 
+  // Initialize Firebase app and database
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
+
+  // Now all your existing logic using db, ref, onValue, push, update, remove stays exactly the same...
 
   const menuRef = ref(db, 'menu');
   const ordersRef = ref(db, 'orders');
@@ -333,6 +342,7 @@
 
   const orderSelections = {};
 
+  // Generate or retrieve a unique customer ID stored locally
   function getOrCreateCustomerId() {
     let id = localStorage.getItem('customerId');
     if (!id) {
@@ -343,230 +353,146 @@
   }
   const customerId = getOrCreateCustomerId();
 
-  function updateOrderSummary() {
-    const orderItemsDiv = document.getElementById('order-items');
-    const totalPriceDiv = document.getElementById('total-price');
-    const placeOrderBtn = document.getElementById('place-order-btn');
-    const tableInput = document.getElementById('table-number');
+  // ... rest of your original code continues unchanged ...
+  // (copy-paste everything exactly from your original script after the imports and initialization)
 
-    const selectedItems = Object.values(orderSelections).filter(
-      (item) => item.selected && item.quantity > 0
-    );
+  // For brevity, I am not repeating your entire code here, just insert the rest as-is.
 
-    if (selectedItems.length === 0) {
-      orderItemsDiv.innerHTML = '<p>No items selected.</p>';
-      totalPriceDiv.textContent = 'Total: Rs. 0';
-      placeOrderBtn.disabled = true;
-      return;
+
+
+    function updateOrderSummary() {
+      const orderItemsDiv = document.getElementById('order-items');
+      const totalPriceDiv = document.getElementById('total-price');
+      const placeOrderBtn = document.getElementById('place-order-btn');
+      const tableInput = document.getElementById('table-number');
+
+      const selectedItems = Object.values(orderSelections).filter(
+        (item) => item.selected && item.quantity > 0
+      );
+
+      if (selectedItems.length === 0) {
+        orderItemsDiv.innerHTML = '<p>No items selected.</p>';
+        totalPriceDiv.textContent = 'Total: Rs. 0';
+        placeOrderBtn.disabled = true;
+        return;
+      }
+
+      orderItemsDiv.innerHTML = '';
+      let total = 0;
+      selectedItems.forEach((item) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'order-item';
+        itemDiv.textContent = `${item.name} x ${item.quantity}`;
+        orderItemsDiv.appendChild(itemDiv);
+        total += item.price * item.quantity;
+      });
+
+      totalPriceDiv.textContent = `Total: Rs. ${total}`;
+      placeOrderBtn.disabled = !tableInput.value || Number(tableInput.value) < 1;
     }
 
-    orderItemsDiv.innerHTML = '';
-    let total = 0;
-    selectedItems.forEach((item) => {
-      const itemDiv = document.createElement('div');
-      itemDiv.className = 'order-item';
-      itemDiv.textContent = `${item.name} x ${item.quantity}`;
-      orderItemsDiv.appendChild(itemDiv);
-      total += item.price * item.quantity;
-    });
-
-    totalPriceDiv.textContent = `Total: Rs. ${total}`;
-    placeOrderBtn.disabled = !tableInput.value || Number(tableInput.value) < 1;
-  }
-
-  function createMenuItem(id, item) {
-    const div = document.createElement('div');
-    div.className = 'menu-item';
-    div.innerHTML = `
-      <div class="menu-content">
-        <h2>${item.name}</h2>
-        <p>${item.description || ''}</p>
-        <div class="price">Rs. ${item.price}</div>
-        <div class="order-controls">
-          <label><input type="checkbox" id="select-${id}"> Add</label>
-          <label>
-            Qty:
-            <button type="button" class="qty-btn" data-action="decrease">−</button>
-            <input type="number" id="qty-${id}" min="0" value="0" disabled>
-            <button type="button" class="qty-btn" data-action="increase">+</button>
-          </label>
+    function createMenuItem(id, item) {
+      const div = document.createElement('div');
+      div.className = 'menu-item';
+      div.innerHTML = `
+        <div class="menu-content">
+          <h2>${item.name}</h2>
+          <p>${item.description || ''}</p>
+          <div class="price">Rs. ${item.price}</div>
+          <div class="order-controls">
+            <label><input type="checkbox" id="select-${id}"> Add</label>
+            <label>
+              Qty:
+              <button type="button" class="qty-btn" data-action="decrease">−</button>
+              <input type="number" id="qty-${id}" min="0" value="0" disabled>
+              <button type="button" class="qty-btn" data-action="increase">+</button>
+            </label>
+          </div>
         </div>
-      </div>
-    `;
+      `;
 
-    const checkbox = div.querySelector(`#select-${id}`);
-    const qtyInput = div.querySelector(`#qty-${id}`);
-    const minusBtn = div.querySelector(`.qty-btn[data-action="decrease"]`);
-    const plusBtn = div.querySelector(`.qty-btn[data-action="increase"]`);
+      const checkbox = div.querySelector(`#select-${id}`);
+      const qtyInput = div.querySelector(`#qty-${id}`);
+      const minusBtn = div.querySelector(`.qty-btn[data-action="decrease"]`);
+      const plusBtn = div.querySelector(`.qty-btn[data-action="increase"]`);
 
-    checkbox.addEventListener('change', () => {
-      if (checkbox.checked) {
-        qtyInput.disabled = false;
-        if (Number(qtyInput.value) === 0) qtyInput.value = 1;
-        orderSelections[id] = {
-          selected: true,
-          quantity: Number(qtyInput.value),
-          price: Number(item.price),
-          name: item.name,
-        };
-      } else {
-        qtyInput.disabled = true;
-        qtyInput.value = 0;
-        orderSelections[id] = { selected: false, quantity: 0 };
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          qtyInput.disabled = false;
+          if (Number(qtyInput.value) === 0) qtyInput.value = 1;
+          orderSelections[id] = {
+            selected: true,
+            quantity: Number(qtyInput.value),
+            price: Number(item.price),
+            name: item.name,
+          };
+        } else {
+          qtyInput.disabled = true;
+          qtyInput.value = 0;
+          orderSelections[id] = { selected: false, quantity: 0 };
+        }
+        updateOrderSummary();
+      });
+
+      qtyInput.addEventListener('input', () => {
+        let val = Number(qtyInput.value);
+        if (isNaN(val) || val < 0) val = 0;
+        qtyInput.value = val;
+        if (val === 0) {
+          checkbox.checked = false;
+          qtyInput.disabled = true;
+          orderSelections[id] = { selected: false, quantity: 0 };
+        } else {
+          checkbox.checked = true;
+          qtyInput.disabled = false;
+          orderSelections[id] = {
+            selected: true,
+            quantity: val,
+            price: Number(item.price),
+            name: item.name,
+          };
+        }
+        updateOrderSummary();
+      });
+
+      minusBtn.addEventListener('click', () => {
+        let val = Number(qtyInput.value) || 0;
+        if (val > 0) val--;
+        qtyInput.value = val;
+        qtyInput.dispatchEvent(new Event('input'));
+      });
+
+      plusBtn.addEventListener('click', () => {
+        let val = Number(qtyInput.value) || 0;
+        val++;
+        qtyInput.value = val;
+        qtyInput.dispatchEvent(new Event('input'));
+      });
+
+      return div;
+    }
+
+    onValue(menuRef, (snapshot) => {
+      const data = snapshot.val();
+      menuDiv.innerHTML = '';
+      for (let id in data) {
+        const item = data[id];
+        const div = createMenuItem(id, item);
+        menuDiv.appendChild(div);
       }
       updateOrderSummary();
     });
 
-    qtyInput.addEventListener('input', () => {
-      let val = Number(qtyInput.value);
-      if (isNaN(val) || val < 0) val = 0;
-      qtyInput.value = val;
-      if (val === 0) {
-        checkbox.checked = false;
-        qtyInput.disabled = true;
-        orderSelections[id] = { selected: false, quantity: 0 };
-      } else {
-        checkbox.checked = true;
-        qtyInput.disabled = false;
-        orderSelections[id] = {
-          selected: true,
-          quantity: val,
-          price: Number(item.price),
-          name: item.name,
-        };
-      }
-      updateOrderSummary();
+    document.getElementById('table-number').addEventListener('input', updateOrderSummary);
+
+    searchBar.addEventListener('input', () => {
+      const q = searchBar.value.toLowerCase();
+      const items = document.querySelectorAll('.menu-item');
+      items.forEach((item) => {
+        const name = item.querySelector('h2').textContent.toLowerCase();
+        item.style.display = name.includes(q) ? '' : 'none';
+      });
     });
-
-    minusBtn.addEventListener('click', () => {
-      let val = Number(qtyInput.value) || 0;
-      if (val > 0) val--;
-      qtyInput.value = val;
-      qtyInput.dispatchEvent(new Event('input'));
-    });
-
-    plusBtn.addEventListener('click', () => {
-      let val = Number(qtyInput.value) || 0;
-      val++;
-      qtyInput.value = val;
-      qtyInput.dispatchEvent(new Event('input'));
-    });
-
-    return div;
-  }
-
-  onValue(menuRef, (snapshot) => {
-    const data = snapshot.val();
-    menuDiv.innerHTML = '';
-    if (!data) {
-      menuDiv.innerHTML = '<p>No menu items available.</p>';
-      return;
-    }
-    for (let id in data) {
-      const item = data[id];
-      const div = createMenuItem(id, item);
-      menuDiv.appendChild(div);
-    }
-    updateOrderSummary();
-  });
-
-  document.getElementById('table-number').addEventListener('input', updateOrderSummary);
-
-  searchBar.addEventListener('input', () => {
-    const q = searchBar.value.toLowerCase();
-    const items = document.querySelectorAll('.menu-item');
-    items.forEach((item) => {
-      const name = item.querySelector('h2').textContent.toLowerCase();
-      item.style.display = name.includes(q) ? '' : 'none';
-    });
-  });
-
-    const checkbox = div.querySelector(`#select-${id}`);
-    const qtyInput = div.querySelector(`#qty-${id}`);
-    const minusBtn = div.querySelector(`.qty-btn[data-action="decrease"]`);
-    const plusBtn = div.querySelector(`.qty-btn[data-action="increase"]`);
-
-    checkbox.addEventListener('change', () => {
-      if (checkbox.checked) {
-        qtyInput.disabled = false;
-        if (Number(qtyInput.value) === 0) qtyInput.value = 1;
-        orderSelections[id] = {
-          selected: true,
-          quantity: Number(qtyInput.value),
-          price: Number(item.price),
-          name: item.name,
-        };
-      } else {
-        qtyInput.disabled = true;
-        qtyInput.value = 0;
-        orderSelections[id] = { selected: false, quantity: 0 };
-      }
-      updateOrderSummary();
-    });
-
-    qtyInput.addEventListener('input', () => {
-      let val = Number(qtyInput.value);
-      if (isNaN(val) || val < 0) val = 0;
-      qtyInput.value = val;
-      if (val === 0) {
-        checkbox.checked = false;
-        qtyInput.disabled = true;
-        orderSelections[id] = { selected: false, quantity: 0 };
-      } else {
-        checkbox.checked = true;
-        qtyInput.disabled = false;
-        orderSelections[id] = {
-          selected: true,
-          quantity: val,
-          price: Number(item.price),
-          name: item.name,
-        };
-      }
-      updateOrderSummary();
-    });
-
-    minusBtn.addEventListener('click', () => {
-      let val = Number(qtyInput.value) || 0;
-      if (val > 0) val--;
-      qtyInput.value = val;
-      qtyInput.dispatchEvent(new Event('input'));
-    });
-
-    plusBtn.addEventListener('click', () => {
-      let val = Number(qtyInput.value) || 0;
-      val++;
-      qtyInput.value = val;
-      qtyInput.dispatchEvent(new Event('input'));
-    });
-
-    return div;
-  }
-
-  onValue(menuRef, (snapshot) => {
-    const data = snapshot.val();
-    menuDiv.innerHTML = '';
-    if (!data) {
-      menuDiv.innerHTML = '<p>No menu items available.</p>';
-      return;
-    }
-    for (let id in data) {
-      const item = data[id];
-      const div = createMenuItem(id, item);
-      menuDiv.appendChild(div);
-    }
-    updateOrderSummary();
-  });
-
-  document.getElementById('table-number').addEventListener('input', updateOrderSummary);
-
-  searchBar.addEventListener('input', () => {
-    const q = searchBar.value.toLowerCase();
-    const items = document.querySelectorAll('.menu-item');
-    items.forEach((item) => {
-      const name = item.querySelector('h2').textContent.toLowerCase();
-      item.style.display = name.includes(q) ? '' : 'none';
-    });
-  });
 
     // Auto-remove cancelled orders older than 1 day
     function cleanupOldCancelledOrders() {
