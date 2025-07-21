@@ -1,0 +1,923 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cafe Kholmay – Owner Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+  	
+    :root {
+      --primary: #4e342e;
+      --accent: #8bc34a;
+      --bg: #f9f5ec;
+      --text: #3e2723;
+      --white: #fff;
+      --wood-pattern: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Quicksand', sans-serif;
+    }
+    body {
+      background: var(--bg) var(--wood-pattern);
+      color: var(--text);
+      padding-bottom: 60px;
+    }
+    .wood-header {
+      background: linear-gradient(to right, #6d4c41, #5d4037);
+      color: #fff8e1;
+      font-size: 1.6rem;
+      padding: 16px 20px;
+      text-align: center;
+      font-weight: 700;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      user-select: none;
+    }
+    .section {
+      display: none;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.85);
+      margin: 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .active {
+      display: block;
+    }
+    .best-seller-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+    }
+    .best-seller-table th,
+    .best-seller-table td {
+      text-align: left;
+      padding: 4px;
+      border-bottom: 1px solid #ddd;
+    }
+    .best-seller-table th {
+      background: var(--accent);
+      color: var(--primary);
+    }
+    .nav-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: var(--primary);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 0;
+      box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      user-select: none;
+    }
+    .nav-button {
+      flex: 1;
+      padding: 10px 0;
+      font-size: 0.9rem;
+      color: var(--white);
+      text-align: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .nav-button.active {
+      background: #795548;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+    h2 {
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+    .order-entry {
+      background: var(--white);
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      padding: 14px;
+      margin-bottom: 14px;
+      user-select: none;
+    }
+    .order-entry.cancelled {
+      background: #ffebee;
+      border: 2px solid #d32f2f;
+    }
+    .order-entry h4 {
+      margin-bottom: 8px;
+      color: #6d4c41;
+    }
+    .order-details {
+      font-size: 0.9rem;
+      color: #555;
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 10px;
+    }
+    .menu-card {
+      background: var(--white);
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      user-select: none;
+    }
+    .menu-card input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    .menu-card button {
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.25s ease;
+      width: 48%;
+    }
+    .save-btn {
+      background: var(--accent);
+      color: white;
+    }
+    .save-btn:hover:not(:disabled) {
+      background: #7cb342;
+    }
+    .save-btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    .delete-btn {
+      background: #d32f2f;
+      color: white;
+    }
+    .delete-btn:hover:not(:disabled) {
+      background: #b71c1c;
+    }
+    .delete-btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    #add-menu-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+      user-select: none;
+    }
+    #add-menu-form input {
+      flex: 1 1 150px;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    #add-menu-form button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      flex: 0 0 auto;
+      font-weight: 700;
+    }
+    #add-menu-form button:hover:not(:disabled) {
+      background: #4e342e;
+    }
+    #add-menu-form button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      user-select: none;
+    }
+    .filter-bar input[type="date"] {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      flex: 0 0 auto;
+    }
+    #ordersCount {
+      background: #efebe9;
+      border: 1px solid var(--primary);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+    #cancelledCount {
+      margin-left: 12px;
+      background: #ffcdd2;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      color: #b71c1c;
+    }
+    #deleteOrdersDayBtn {
+      background: #e53935;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #deleteOrdersDayBtn:hover:not(:disabled) {
+      background: #c62828;
+    }
+    #deleteOrdersDayBtn:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    .status-label {
+      font-weight: 700;
+      color: white;
+      background-color: #d32f2f;
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      display: inline-block;
+      margin-bottom: 6px;
+      user-select: none;
+    }
+    .status-label.completed {
+      background-color: #388e3c;
+    }
+  .cancelled {
+    text-decoration: line-through;
+    opacity: 0.7;
+    color: grey;
+  }
+  </style>
+</head>
+<body>
+  <header class="wood-header">🌿 Cafe Kholmay – Owner Panel</header>
+
+  <!-- Sales Section -->
+  <div class="section active" id="totalSales">
+    <h2>💲 Today's Total Sales</h2>
+    <div style="
+  border: 1px solid #ddd; 
+  border-radius: 8px; 
+  padding: 20px; 
+  background: #fff; 
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
+  width: 300px;">
+    <p id="sales-summary">Loading...</p>
+    </div></br>
+    <h3>🥇 Top 3 Best Sellers</h3>
+    <div style="
+  border: 1px solid #ddd; 
+  border-radius: 8px; 
+  padding: 20px; 
+  background: #fff; 
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
+  width: 300px;">
+  
+    <table class="best-seller-table" aria-label="Top 3 Best Sellers">
+      <thead>
+        <tr><th>Rank</th><th>Item</th><th>Count</th></tr>
+      </thead>
+      <tbody id="best-seller"><tr><td colspan="3">Loading...</td></tr></tbody>
+    </table>
+</div>  </br>
+    <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">📊 Weekly Sales</h3>
+<div style="
+  border: 1px solid #ddd; 
+  border-radius: 8px; 
+  padding: 15px; 
+  background: #fff; 
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
+  max-width: 400px; 
+  font-size: 14px; 
+  margin: 0 auto;">
+  
+  <canvas id="salesChart" aria-label="Weekly Sales Chart" role="img"
+    style="width: 100%; max-width: 100%; height: 200px; display: block; margin: 0 auto;">
+  </canvas>
+
+</div> </div>    
+  <!-- Order History Section -->
+  <div class="section" id="orderHistory">
+    <h2>📖 Order History (Filtered)</h2>
+    <div class="filter-bar">
+      <label for="filterDate">Filter by Date:</label>
+      <input type="date" id="filterDate" aria-label="Filter orders by date" />
+      <button id="filterBtn">Filter</button>
+      <button id="clearFilterBtn">Clear</button>
+      <button id="deleteOrdersDayBtn" disabled>Delete Orders of Selected Day</button>
+      <span id="ordersCount">Completed Orders: 0</span>
+      <span id="cancelledCount">Cancelled Orders: 0</span>
+    </div>
+    <div id="orders" aria-live="polite" aria-atomic="true"></div>
+  </div>
+
+  <!-- Add New Menu Item Section -->
+  <div class="section" id="addItems">
+    <h2>✏️ Add New Menu Item</h2>
+    <form id="add-menu-form" aria-label="Add new menu item form">
+      <input type="text" id="new-name" placeholder="Item Name" required aria-required="true" />
+      <input type="number" id="new-price" placeholder="Price (Rs.)" required min="0" aria-required="true" />
+      <input type="text" id="new-category" placeholder="Category" required aria-required="true" />
+      <button type="submit">Add Item</button>
+    </form>
+    <div class="menu-grid" id="menu" aria-live="polite" aria-atomic="true"></div>
+  </div>
+
+  <!-- Sales History Section -->
+  <div class="section" id="salesHistory">
+    <h2>📅📊 Sales History</h2>
+    <div id="sales-history">Loading...</div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <nav class="nav-bar" role="navigation" aria-label="Main navigation">
+    <button class="nav-button active" data-section="totalSales" aria-pressed="true">💲<br>Sales</button>
+    <button class="nav-button" data-section="orderHistory" aria-pressed="false">📖<br>Orders</button>
+    <button class="nav-button" data-section="addItems" aria-pressed="false">➕<br>Add</button>
+    <button class="nav-button" data-section="salesHistory" aria-pressed="false">📅<br>History</button>
+    <button class="nav-button" id="logoutBtn">⏏️<br>Logout</button>
+  </nav>
+ 
+  <script type="module">
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-analytics.js";
+import { getDatabase, ref, onValue, get, push, update, remove } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+
+//  NEW CONFIG from firebase.js.txt
+const firebaseConfig = {
+  apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
+  authDomain: "kholme-menu1.firebaseapp.com",
+  databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
+  projectId: "kholme-menu1",
+  storageBucket: "kholme-menu1.firebasestorage.app",
+  messagingSenderId: "434798935284",
+  appId: "1:434798935284:web:527ae90b4d4833a30ff2a1",
+  measurementId: "G-9XG8BZ9YXK"
+};
+
+//  Initialize Firebase with new config
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getDatabase(app);
+const auth = getAuth();
+
+// From here, KEEP THE REST OF YOUR SCRIPT UNCHANGED...
+    // NAVIGATION
+    const sections = document.querySelectorAll('.section');
+    const navButtons = document.querySelectorAll('.nav-button');
+
+    navButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.id === 'logoutBtn') {
+          signOut(auth).then(() => window.location.href = 'login.html');
+          return;
+        }
+        const sectionId = button.dataset.section;
+        sections.forEach(s => s.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+        navButtons.forEach(btn => {
+          btn.classList.remove('active');
+          btn.setAttribute('aria-pressed', 'false');
+        });
+        button.classList.add('active');
+        button.setAttribute('aria-pressed', 'true');
+
+        if (sectionId === 'salesHistory') {
+          loadSalesHistory();
+        }
+      });
+    });
+
+    // ====== SALES SECTION LOGIC ======
+
+    const ordersRef = ref(db, 'completedOrders');
+    const bestSellerEl = document.getElementById('best-seller');
+    const salesSummaryEl = document.getElementById('sales-summary');
+    const salesChartCanvas = document.getElementById('salesChart');
+    let salesChart;
+
+    const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function updateChart(labels, data, rawDates) {
+  if (salesChart) salesChart.destroy();
+  salesChart = new Chart(salesChartCanvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Total Sales (Rs.)',
+        data: data,
+        backgroundColor: 'rgba(129, 199, 132, 0.85)',
+        borderRadius: 8,         // slightly smaller radius
+        barThickness: 30,        // narrower bars
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: 'Weekly Sales Overview',
+          font: { size: 10, weight: 'bold' },  // smaller title
+          color: '#2e7d32'
+        },
+        tooltip: {
+          callbacks: {
+            afterLabel: context => `Date: ${rawDates[context.dataIndex]}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: '#2e7d32',
+            font: {
+              size: 10  // 👈 smaller day labels (Sun Mon Tue)
+            },
+            padding: 4 // tighter spacing if needed
+          }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            font: {
+              size: 10// 👈 smaller y-axis numbers
+            },
+            padding: 4
+          }
+        }
+      }
+    }
+  });
+}
+    function getBestSellingItem(orders) {
+      const itemMap = {};
+      let todayTotal = 0;
+      const todayStr = new Date().toISOString().slice(0, 10);
+
+      for (const id in orders) {
+        const order = orders[id];
+        if (order.status === 'cancelled') continue;
+
+        const orderDate = new Date(order.timestamp || 0).toISOString().slice(0, 10);
+        let price = 0;
+
+        if (Array.isArray(order.items)) {
+          order.items.forEach(item => {
+            const name = item.name || 'Unnamed';
+            const qty = Number(item.quantity) || 1;
+            const itemPrice = Number(item.price) || 0;
+            price += qty * itemPrice;
+            itemMap[name] = (itemMap[name] || 0) + qty;
+          });
+        } else {
+          const name = order.name || 'Unnamed';
+          const qty = Number(order.quantity) || 1;
+          const itemPrice = Number(order.price) || 0;
+          price += qty * itemPrice;
+          itemMap[name] = (itemMap[name] || 0) + qty;
+        }
+
+        if (orderDate === todayStr) {
+          todayTotal += price;
+        }
+      }
+
+      const sorted = Object.entries(itemMap).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      let html = '';
+      sorted.forEach(([name, count], index) => {
+        html += `<tr><td>#${index + 1}</td><td>${name}</td><td>${count}</td></tr>`;
+      });
+      bestSellerEl.innerHTML = html || '<tr><td colspan="3">No sales today.</td></tr>';
+      salesSummaryEl.innerText = `Rs. ${todayTotal.toFixed(2)}`;
+    }
+
+    async function loadChartData() {
+      try {
+        const snapshot = await get(ordersRef);
+        const data = snapshot.val() || {};
+        const summary = {};
+        const rawDates = [];
+        const now = new Date();
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date(now);
+          date.setDate(now.getDate() - i);
+          const iso = date.toISOString().slice(0, 10);
+          const label = weekdayNames[date.getDay()];
+          summary[label] = 0;
+          rawDates.push(iso);
+        }
+
+        // Accumulate sales per day
+        for (const key in data) {
+          const order = data[key];
+          if (order.status === 'cancelled') continue;
+          const orderDate = order.timestamp ? new Date(order.timestamp).toISOString().slice(0, 10) : null;
+          if (!orderDate || !rawDates.includes(orderDate)) continue;
+
+          let orderTotal = 0;
+          if (Array.isArray(order.items)) {
+            order.items.forEach(i => {
+              const qty = Number(i.quantity) || 1;
+              const price = Number(i.price) || 0;
+              orderTotal += qty * price;
+            });
+        } else {
+            orderTotal = (Number(order.quantity) || 1) * (Number(order.price) || 0);
+          }
+
+          // Add to the corresponding day label
+          const dayLabel = weekdayNames[new Date(orderDate).getDay()];
+          if (dayLabel in summary) summary[dayLabel] += orderTotal;
+        }
+
+        // Prepare data for chart
+        const labels = Object.keys(summary);
+        const totals = Object.values(summary);
+
+        updateChart(labels, totals, rawDates);
+        getBestSellingItem(data);
+      } catch (error) {
+        console.error('Error loading sales data:', error);
+        salesSummaryEl.innerText = 'Error loading sales data.';
+        bestSellerEl.innerHTML = '<tr><td colspan="3">Error loading data.</td></tr>';
+      }
+    }
+
+    // ====== ORDER HISTORY SECTION LOGIC ======
+
+  const ordersContainer = document.getElementById('orders');
+const filterDateInput = document.getElementById('filterDate');
+const filterBtn = document.getElementById('filterBtn');
+const clearFilterBtn = document.getElementById('clearFilterBtn');
+const deleteOrdersDayBtn = document.getElementById('deleteOrdersDayBtn');
+const ordersCountEl = document.getElementById('ordersCount');
+const cancelledCountEl = document.getElementById('cancelledCount');
+
+let filteredOrders = {};
+let selectedDate = null;
+
+// Format timestamp to readable date/time
+function formatDate(ts) {
+  if (!ts) return 'Unknown date';
+  const d = new Date(ts);
+  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+// Render orders list
+function renderOrders(allOrders, filterToDate = null) {
+  const today = new Date().toISOString().slice(0, 10);
+  const targetDate = filterToDate || today;
+
+  let completedCount = 0;
+  let cancelledCount = 0;
+  let html = '';
+
+  Object.entries(allOrders).forEach(([key, order]) => {
+    const orderDate = order.timestamp ? new Date(order.timestamp).toISOString().slice(0, 10) : '';
+    if (orderDate !== targetDate) return;
+
+    const statusClass = order.status === 'cancelled' ? 'cancelled' : '';
+    if (order.status === 'cancelled') cancelledCount++;
+    else completedCount++;
+
+    let orderTotal = 0;
+
+    if (Array.isArray(order.items)) {
+      order.items.forEach(item => {
+        const qty = Number(item.quantity) || 1;
+        const price = Number(item.price) || 0;
+        orderTotal += qty * price;
+      });
+    } else if (order.name) {
+      const qty = Number(order.quantity) || 1;
+      const price = Number(order.price) || 0;
+      orderTotal += qty * price;
+    }
+
+    html += `<div class="order-entry ${statusClass}" tabindex="0">
+      <h4>Order ID: ${key}</h4>
+      <div class="order-details">
+        <strong>Date:</strong> ${formatDate(order.timestamp)}<br />
+        <strong>Status:</strong> ${order.status || 'N/A'}<br />
+        <strong>Items:</strong><br />
+        <ul>`;
+
+    if (Array.isArray(order.items)) {
+      order.items.forEach(item => {
+        html += `<li>${item.name || 'Unnamed'} — Qty: ${item.quantity || 1}, Price: Rs. ${item.price || '0.00'}</li>`;
+      });
+    } else if (order.name) {
+      html += `<li>${order.name} — Qty: ${order.quantity || 1}, Price: Rs. ${order.price || '0.00'}</li>`;
+    } else {
+      html += `<li>No items info</li>`;
+    }
+
+    html += `</ul>
+        <strong>Total:</strong> Rs. ${orderTotal.toFixed(2)}
+      </div>
+    </div>`;
+  });
+
+  ordersContainer.innerHTML = html || `<p>No orders found for ${targetDate}.</p>`;
+  ordersCountEl.innerText = `Completed Orders: ${completedCount}`;
+  cancelledCountEl.innerText = `Cancelled Orders: ${cancelledCount}`;
+  deleteOrdersDayBtn.disabled = completedCount === 0;
+}
+
+// Load all orders once
+async function loadAllOrders() {
+  try {
+    const snapshot = await get(ordersRef);
+    const data = snapshot.val() || {};
+    filteredOrders = data;
+
+    const today = new Date().toISOString().slice(0, 10);
+    renderOrders(data, today);
+    filterDateInput.value = today;
+    selectedDate = today;
+  } catch (err) {
+    console.error('Failed to load orders:', err);
+    ordersContainer.innerHTML = '<p>Error loading orders.</p>';
+  }
+}
+
+// Filter orders by selected date
+function filterOrdersByDate(dateStr) {
+  if (!dateStr) return filteredOrders;
+
+  const filtered = {};
+  Object.entries(filteredOrders).forEach(([key, order]) => {
+    const orderDate = order.timestamp ? new Date(order.timestamp).toISOString().slice(0, 10) : '';
+    if (orderDate === dateStr) filtered[key] = order;
+  });
+  return filtered;
+}
+
+filterBtn.addEventListener('click', () => {
+  selectedDate = filterDateInput.value;
+  if (!selectedDate) {
+    alert('Please select a date to filter.');
+    return;
+  }
+  renderOrders(filteredOrders, selectedDate);
+});
+
+clearFilterBtn.addEventListener('click', () => {
+  const today = new Date().toISOString().slice(0, 10);
+  filterDateInput.value = today;
+  selectedDate = today;
+  renderOrders(filteredOrders, today);
+});
+
+// Delete all completed orders of selected day
+deleteOrdersDayBtn.addEventListener('click', async () => {
+  if (!selectedDate) {
+    alert('Select a date first.');
+    return;
+  }
+  if (!confirm(`Are you sure you want to delete ALL completed orders of ${selectedDate}? This action cannot be undone.`)) return;
+
+  try {
+    const snapshot = await get(ordersRef);
+    const data = snapshot.val() || {};
+
+    const updates = {};
+    Object.entries(data).forEach(([key, order]) => {
+      const orderDate = order.timestamp ? new Date(order.timestamp).toISOString().slice(0, 10) : '';
+      if (orderDate === selectedDate && order.status !== 'cancelled') {
+        updates[key] = null;
+      }
+    });
+
+    await update(ref(db, 'completedOrders'), updates);
+    alert(`Deleted completed orders on ${selectedDate}`);
+    await loadAllOrders();
+    renderOrders(filteredOrders, selectedDate);
+  } catch (err) {
+    console.error('Error deleting orders:', err);
+    alert('Failed to delete orders.');
+  }
+});
+
+// Show today's orders on page load
+window.addEventListener('DOMContentLoaded', loadAllOrders);
+
+    // ====== MENU MANAGEMENT SECTION LOGIC ======
+const menuRef = ref(db, 'menu');
+const menuContainer = document.getElementById('menu');
+const addMenuForm = document.getElementById('add-menu-form');
+
+function createMenuCard(key, item) {
+  const card = document.createElement('div');
+  card.className = 'menu-card';
+  card.innerHTML = `
+    <input type="text" class="name-input" value="${item.name}" aria-label="Menu item name" />
+    <input type="number" step="0.01" class="price-input" value="${item.price}" min="0" aria-label="Menu item price" />
+    <input type="text" class="category-input" value="${item.category}" aria-label="Menu item category" />
+    <div style="display:flex; justify-content:space-between;">
+      <button class="save-btn" aria-label="Save menu item changes">Save</button>
+      <button class="delete-btn" aria-label="Delete this menu item">Delete</button>
+    </div>
+  `;
+
+  const nameInput = card.querySelector('.name-input');
+  const priceInput = card.querySelector('.price-input');
+  const categoryInput = card.querySelector('.category-input');
+  const saveBtn = card.querySelector('.save-btn');
+  const deleteBtn = card.querySelector('.delete-btn');
+
+  saveBtn.addEventListener('click', async () => {
+    const newName = nameInput.value.trim();
+    const newPrice = parseFloat(priceInput.value);
+    const newCategory = categoryInput.value.trim();
+
+    console.log('=== SAVE DEBUG ===');
+    console.log('Key:', key);
+    console.log('New Name:', newName);
+    console.log('New Price:', newPrice);
+    console.log('New Category:', newCategory);
+
+    if (!newName || isNaN(newPrice) || newPrice < 0 || !newCategory) {
+      console.log('Reloading menu items...');
+      loadMenuItems();
+    }
+  });
+
+  deleteBtn.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to delete this menu item?')) return;
+    try {
+      deleteBtn.disabled = true;
+      console.log('Deleting item with key:', key);
+      await remove(ref(db, `menu/${key}`));
+      alert('Item deleted.');
+      loadMenuItems();
+    } catch (error) {
+      alert('Failed to delete item.');
+      console.error('Delete error:', error);
+    } finally {
+      deleteBtn.disabled = false;
+    }
+  });
+
+  return card;
+}
+
+async function loadMenuItems() {
+  console.log('Loading menu items...');
+  try {
+    const snapshot = await get(menuRef);
+    const data = snapshot.val() || {};
+    console.log('Menu data:', data);
+    menuContainer.innerHTML = '';
+
+    if (Object.keys(data).length === 0) {
+      menuContainer.innerHTML = '<p>No menu items found.</p>';
+      return;
+    }
+
+    Object.entries(data).forEach(([key, item]) => {
+      console.log('Creating card for:', key, item);
+      const card = createMenuCard(key, item);
+      menuContainer.appendChild(card);
+    });
+  } catch (err) {
+    menuContainer.innerHTML = '<p>Error loading menu items.</p>';
+    console.error('Error loading menu items:', err);
+  }
+}
+
+addMenuForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = document.getElementById('new-name').value.trim();
+  const price = parseFloat(document.getElementById('new-price').value);
+  const category = document.getElementById('new-category').value.trim();
+
+  console.log('=== ADD DEBUG ===');
+  console.log('Name:', name);
+  console.log('Price:', price);
+  console.log('Category:', category);
+
+  if (!name || isNaN(price) || price < 0 || !category) {
+    alert('Please enter valid data.');
+    return;
+  }
+
+  try {
+    const submitBtn = addMenuForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    console.log('Pushing new item...');
+    await push(menuRef, { name, price, category });
+    alert('New menu item added.');
+    addMenuForm.reset();
+    loadMenuItems();
+  } catch (err) {
+    alert('Failed to add new item.');
+    console.error('Add menu item error:', err);
+  } finally {
+    addMenuForm.querySelector('button[type="submit"]').disabled = false;
+  }
+});
+
+
+    // ====== SALES HISTORY SECTION LOGIC ======
+
+    const salesHistoryContainer = document.getElementById('sales-history');
+
+    async function loadSalesHistory() {
+      try {
+        const snapshot = await get(ordersRef);
+        const data = snapshot.val() || {};
+        if (Object.keys(data).length === 0) {
+          salesHistoryContainer.innerHTML = '<p>No sales history available.</p>';
+          return;
+        }
+
+        const history = {};
+
+        Object.values(data).forEach(order => {
+          if (order.status === 'cancelled') return;
+
+          const orderDate = order.timestamp ? new Date(order.timestamp) : null;
+          if (!orderDate) return;
+          const dateStr = orderDate.toISOString().slice(0, 10);
+
+          let orderTotal = 0;
+          if (Array.isArray(order.items)) {
+            order.items.forEach(i => {
+              orderTotal += (Number(i.quantity) || 1) * (Number(i.price) || 0);
+            });
+          } else {
+            orderTotal = (Number(order.quantity) || 1) * (Number(order.price) || 0);
+          }
+
+          if (!history[dateStr]) {
+            history[dateStr] = 0;
+          }
+          history[dateStr] += orderTotal;
+        });
+
+        // Sort by date descending
+        const sortedDates = Object.keys(history).sort((a, b) => new Date(b) - new Date(a));
+
+        let html = `<table style="width:100%; border-collapse: collapse;" aria-label="Sales history table">
+          <thead>
+            <tr>
+              <th style="border-bottom: 1px solid #ccc; padding: 8px; text-align: left;">Date</th>
+              <th style="border-bottom: 1px solid #ccc; padding: 8px; text-align: right;">Total Sales (Rs.)</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+        sortedDates.forEach(date => {
+          html += `
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${date}</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${history[date].toFixed(2)}</td>
+            </tr>`;
+        });
+
+        html += '</tbody></table>';
+
+        salesHistoryContainer.innerHTML = html;
+      } catch (error) {
+        salesHistoryContainer.innerHTML = '<p>Error loading sales history.</p>';
+        console.error('Sales history load error:', error);
+      }
+    }
+
+    // INITIAL LOADS
+    loadChartData();
+    loadAllOrders();
+    loadMenuItems();
+
+  </script>
+</body>
+</html>
