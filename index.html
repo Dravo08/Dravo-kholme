@@ -389,7 +389,14 @@
   const ordersRef = ref(db, 'orders');
   const menuDiv = document.getElementById('menu');
   const searchBar = document.getElementById('search-bar');
+searchBar.addEventListener('input', () => {
+  const query = searchBar.value.toLowerCase().trim();
+  const titles = document.querySelectorAll('.category-title');
 
+  titles.forEach(title => {
+    title.style.display = query ? 'none' : 'block';
+  });
+});
   const orderSelections = {};
 
   // Generate or retrieve a unique customer ID stored locally
