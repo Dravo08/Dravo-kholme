@@ -121,26 +121,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebas
 import { getDatabase, ref, onChildAdded, onChildRemoved, set, remove, update } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-const barCategories = new Set([
-  "Hot Beverages", "Cold Beverage", "Iced Coffee Alternatives", "Blended Beverage",
-  "Icecream", "V60", "Soft Drinks", "Lassi", "Hot Drinks Alternatives"
-]);
-
-const menuJSON = {
-  "item1000": { "category": "Hot Beverages", "name": "Espresso", "price": 120 },
-  "item1001": { "category": "Hot Beverages", "name": "Doppio", "price": 140 },
-  "item1002": { "category": "Hot Beverages", "name": "Americano (single/double)", "price": 160 },
-  "item1003": { "category": "Hot Beverages", "name": "Cappuccino", "price": 230 },
-  "item1004": { "category": "Hot Beverages", "name": "Cafe Latte", "price": 250 },
-  "item1095": { "category": "Hookah", "name": "Cloude hooka Flavour (Customers choice)", "price": 500 }
-};
-
-const menuItemsByName = {};
-for (const key in menuJSON) {
-  const item = menuJSON[key];
-  menuItemsByName[item.name] = item;
-}
-
 const firebaseConfig = {
   apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
   authDomain: "kholme-menu1.firebaseapp.com",
@@ -155,7 +135,6 @@ const db = getDatabase(app);
 const auth = getAuth();
 
 const ordersRef = ref(db, 'orders');
-const completedRef = ref(db, 'completedOrders');
 const foodSection = document.getElementById('foodSection');
 const barSection = document.getElementById('barSection');
 const logoutBtn = document.getElementById('logout');
@@ -168,38 +147,27 @@ onAuthStateChanged(auth, user => { if (!user) location.href = 'kitchen-login.htm
 
 function formatItems(items) {
   return items.map(i => {
-    const q = i.quantity||1, p = i.price||0;
-    return `${i.name} / Qty: ${q} / Rs.${p} each / Total: Rs.${q*p}`;
+    const q = i.quantity || 1, p = i.price || 0;
+    return `${i.name} / Qty: ${q} / Rs.${p} each / Total: Rs.${q * p}`;
   }).join('\n');
 }
 
-// CHANGED splitItems function — now use each item's own 'type' property to split
-function splitItems(items) {
-  const food = [], bar = [];
-  items.forEach(item => {
-    if (item.type === 'bar') {
-      bar.push(item);
-    } else {
-      food.push(item);
-    }
-  });
-  return { food, bar };
-}
+function attachCard(container, key, order) {
+  if (document.getElementById(key)) return;
 
-function attachCard(container, key, order, itemsSubset, suffix = '') {
-  const id = `${key}${suffix}`;
-  if (document.getElementById(id)) return;
-
-  let total = itemsSubset.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+  let total = 0;
+  if(Array.isArray(order.items)){
+    total = order.items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+  }
   const time = new Date(order.timestamp).toLocaleTimeString();
   const table = order.table || order.tableNumber || 'N/A';
 
   const div = document.createElement('div');
   div.className = 'order-card';
-  div.id = id;
+  div.id = key;
   div.innerHTML = `
-    <div class="order-header">${order.name || itemsSubset[0].name || 'Unnamed'} – Table ${table}</div>
-    <div class="order-info">Total: Rs. ${total}<br>Details:<br>${formatItems(itemsSubset).replace(/\n/g, '<br>')}</div>
+    <div class="order-header">${order.name || (order.items && order.items[0]?.name) || 'Unnamed'} – Table ${table}</div>
+    <div class="order-info">Total: Rs. ${total}<br>Details:<br>${formatItems(order.items).replace(/\n/g, '<br>')}</div>
     <div class="order-info">🕒 ${time}</div>
     <div class="order-info">📝 Notes: ${order.note || order.description || 'None'}</div>
     <div class="status-buttons">
@@ -208,6 +176,7 @@ function attachCard(container, key, order, itemsSubset, suffix = '') {
       <button class="completed">Completed</button>
       <button class="cancel">Cancel</button>
     </div>`;
+
   const [b0, b1, b2, b3] = div.querySelectorAll('button');
   b0.onclick = () => update(ref(db, `orders/${key}`), { status: 'pending' });
   b1.onclick = () => update(ref(db, `orders/${key}`), { status: 'processing' });
@@ -225,16 +194,22 @@ function attachCard(container, key, order, itemsSubset, suffix = '') {
     order.status === 'completed' ? '#aed581' :
     order.status === 'cancelled' ? '#ef5350' : '#8bc34a'
   }`;
+
   container.appendChild(div);
 }
 
 onChildAdded(ordersRef, snapshot => {
-  const key = snapshot.key, order = snapshot.val();
+  const key = snapshot.key;
+  const order = snapshot.val();
+
   if (!Array.isArray(order.items)) return;
 
-  const { food, bar } = splitItems(order.items);
-  if (food.length) attachCard(foodSection, key, order, food, '_food');
-  if (bar.length) attachCard(barSection, key, order, bar, '_bar');
+  // Check order.type to decide section
+  if(order.type === 'bar'){
+    attachCard(barSection, key, order);
+  } else {
+    attachCard(foodSection, key, order);
+  }
 
   if (!order.notified) {
     orderBell.play().catch(() => {});
@@ -244,10 +219,8 @@ onChildAdded(ordersRef, snapshot => {
 
 onChildRemoved(ordersRef, snap => {
   const k = snap.key;
-  const foodEl = document.getElementById(`${k}_food`);
-  const barEl = document.getElementById(`${k}_bar`);
-  if (foodEl) foodEl.remove();
-  if (barEl) barEl.remove();
+  const el = document.getElementById(k);
+  if (el) el.remove();
 });
 
 btnOrders.onclick = () => {
