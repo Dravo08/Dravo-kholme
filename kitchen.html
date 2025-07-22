@@ -106,7 +106,7 @@
   </style>
 </head>
 <body>
-  <h1>👨‍🍳 Kitchen Dashboard</h1>
+  <h1>🍽️ Kitchen Dashboard</h1>
   <button id="logout">Logout</button>
 
   <div id="container">
@@ -118,17 +118,45 @@
   <audio id="orderBell" src="https://dravo08.github.io/Dravo-kholme/bell.mp3" preload="auto"></audio>
 
   <div class="bottom-nav">
-    <div id="btnOrders" class="nav-button active" title="Orders">🧾 Orders</div>
+    <div id="btnOrders" class="nav-button active" title="Orders">🍴 Orders</div>
     <div id="btnHistory" class="nav-button" title="History">📜 History</div>
   </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-import { getDatabase, ref, onChildAdded, onChildChanged, onChildRemoved, set, remove, update } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+import { getDatabase, ref, onChildAdded, onChildRemoved, set, remove, update } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-const barCategories = ["Hot Beverages","Cold Beverage","Iced Coffee Alternatives","Blended Beverage","Icecream","V60","Soft Drinks","Lassi","Hot Drinks Alternatives"];
-const excludedSet = new Set(barCategories);
+// Your bar categories
+const barCategories = new Set([
+  "Hot Beverages",
+  "Cold Beverage",
+  "Iced Coffee Alternatives",
+  "Blended Beverage",
+  "Icecream",
+  "V60",
+  "Soft Drinks",
+  "Lassi",
+  "Hot Drinks Alternatives"
+]);
+
+// Your full menu JSON data (only partial included here for example)
+const menuJSON = {
+  "item1000": { "category": "Hot Beverages", "name": "Espresso", "price": 120 },
+  "item1001": { "category": "Hot Beverages", "name": "Doppio", "price": 140 },
+  "item1002": { "category": "Hot Beverages", "name": "Americano (single/double)", "price": 160 },
+  "item1003": { "category": "Hot Beverages", "name": "Cappuccino", "price": 230 },
+  "item1004": { "category": "Hot Beverages", "name": "Cafe Latte", "price": 250 },
+  // ... add all your menu items here exactly as in your JSON
+  "item1095": { "category": "Hookah", "name": "Cloude hooka Flavour (Customers choice)", "price": 500 }
+};
+
+// Build a lookup by name
+const menuItemsByName = {};
+for (const key in menuJSON) {
+  const item = menuJSON[key];
+  menuItemsByName[item.name] = item;
+}
 
 const firebaseConfig = {
   apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
@@ -156,7 +184,6 @@ logoutBtn.onclick = () => signOut(auth).then(() => location.href = 'kitchen-logi
 onAuthStateChanged(auth, user => { if (!user) location.href = 'kitchen-login.html'; });
 
 const ordersMap = {};
-const completedMap = {};
 let currentView = 'orders';
 
 function formatItems(items) {
@@ -166,31 +193,22 @@ function formatItems(items) {
   }).join('\n');
 }
 
+// Updated isBarOnly: uses menuItemsByName to check category
 function isBarOnly(order){
   if(!Array.isArray(order.items)) return false;
-  return order.items.every(item => excludedSet.has(item.category));
-}
-
-function createOrderCard(order, key, showBtns){
-  if(!Array.isArray(order.items)) return null;
-  const allBar = isBarOnly(order);
-  if(!allBar && currentView!=='orders') return null;
-  if(allBar && currentView!== 'orders') return null;
-  if(currentView==='orders' && showBtns){
-    // top = food; if it's bar-only, go bottom
-    if(allBar) attachCard(barSection,key,order,showBtns);
-    else attachCard(foodSection,key,order,showBtns);
-    return null;
-  }
-  return null;
+  return order.items.every(item => {
+    const menuItem = menuItemsByName[item.name];
+    return menuItem && barCategories.has(menuItem.category);
+  });
 }
 
 function attachCard(container, key, order, showBtns){
+  if(!Array.isArray(order.items)) return;
   let priceStr = order.status==='cancelled'
     ? `<strong style="color:red;">❌ Cancelled:</strong> ${order.note||''}`
     : order.price
       ? `Price: Rs. ${order.price}`
-      : `Total Price: Rs. ${order.items.reduce((s,i)=>s+(i.price||0)*(i.quantity||1),0)}\nDetails:\n${formatItems(order.items)}`;
+      : `Total Price: Rs. ${order.items.reduce((s,i)=>s+(i.price||0)*(i.quantity||1),0)}<br>Details:<br>${formatItems(order.items).replace(/\n/g,'<br>')}`;
 
   const time = new Date(order.timestamp).toLocaleTimeString();
   const table = order.table||order.tableNumber||'N/A';
@@ -200,9 +218,9 @@ function attachCard(container, key, order, showBtns){
   div.id=key;
   div.innerHTML = `
     <div class="order-header">${order.name||order.items[0].name||'Unnamed'} – Table ${table}</div>
-    <div class="order-info">${priceStr.replace(/\n/g,'<br>')}</div>
+    <div class="order-info">${priceStr}</div>
     <div class="order-info">🕒 ${time}</div>
-    <div class="order-info">📋 Notes: ${order.note||order.description||'None'}</div>
+    <div class="order-info">📝 Notes: ${order.note||order.description||'None'}</div>
     <div class="status-buttons">
       <button class="pending">Pending</button>
       <button class="processing">Processing</button>
@@ -228,13 +246,17 @@ function attachCard(container, key, order, showBtns){
 }
 
 onChildAdded(ordersRef, snapshot=>{
-  const k=snapshot.key,o=snapshot.val(); ordersMap[k]=o;
+  const k=snapshot.key,o=snapshot.val();
+  ordersMap[k]=o;
   const allBar=isBarOnly(o);
   if(currentView==='orders'){
     if(allBar) attachCard(barSection,k,o,true);
     else attachCard(foodSection,k,o,true);
   }
-  if(!o.notified){ orderBell.play().catch(()=>{}); update(ref(db,`orders/${k}`),{notified:true});}
+  if(!o.notified){
+    orderBell.play().catch(()=>{});
+    update(ref(db,`orders/${k}`),{notified:true});
+  }
 });
 
 onChildRemoved(ordersRef,snap=>{
