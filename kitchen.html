@@ -294,19 +294,22 @@
   const key = snapshot.key;
   ordersMap[key] = order;
 
-  // 🔔 Play bell for new orders
+  // Prevent duplicate order cards
+  if (!document.getElementById(key)) {
+    if (currentView === 'orders') {
+      const card = createOrderCard(order, key, true);
+      ordersDiv.appendChild(card);
+      sortOrderCards(ordersDiv);
+    }
+  }
+
+  // Play bell only if not notified yet
   if (!order.notified) {
     orderBell.play().catch((err) => {
       console.warn('Bell sound blocked until user interacts:', err);
     });
 
     update(ref(db, `orders/${key}`), { notified: true });
-  }
-
-  if (currentView === 'orders') {
-    const card = createOrderCard(order, key, true);
-    ordersDiv.appendChild(card);
-    sortOrderCards(ordersDiv);
   }
 });
     onChildChanged(ordersRef, (snapshot) => {
