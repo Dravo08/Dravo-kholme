@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Kitchen Dashboard –kholm</title>
+  <title>Kitchen Dashboard –kholmay </title>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -142,6 +142,18 @@
       signOut
     } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
+    const excludedCategories = [
+      "Hot Beverages",
+      "Cold Beverage",
+      "Iced Coffee Alternatives",
+      "Blended Beverage",
+      "Icecream",
+      "V60",
+      "Soft Drinks",
+      "Lassi",
+      "Hot Drinks Alternatives"
+    ];
+
     const firebaseConfig = {
       apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
       authDomain: "kholme-menu1.firebaseapp.com",
@@ -187,6 +199,12 @@
     }
 
     function createOrderCard(order, key, showStatusButtons = true) {
+      // Skip orders with only excluded category items
+      if (Array.isArray(order.items)) {
+        const hasNonExcludedItems = order.items.some(item => !excludedCategories.includes(item.category));
+        if (!hasNonExcludedItems) return null;
+      }
+
       let orderName = order.name || (order.items && order.items.length > 0 && order.items[0].name) || "Unnamed Item";
 
       let priceDisplay = '';
@@ -255,17 +273,14 @@
           try {
             const finalStatus = order.status === 'cancelled' ? 'cancelled' : 'completed';
             const finalNote = order.status === 'cancelled' ? (order.note || 'Sorry we don’t have it now') : '';
-
             await set(ref(db, `completedOrders/${key}`), {
               ...order,
               status: finalStatus,
               note: finalNote
             });
-
             await remove(ref(db, `orders/${key}`));
             div.remove();
             delete ordersMap[key];
-
             if (currentView === 'history') {
               renderHistory();
             }
@@ -288,53 +303,50 @@
 
     const ordersMap = {};
     const completedMap = {};
-let audioEnabled = false;
+    let audioEnabled = false;
 
-function enableAudio() {
-  if (!audioEnabled) {
-    document.getElementById('orderBell').play().catch(() => {});
-    audioEnabled = true;
-  }
-}
+    function enableAudio() {
+      if (!audioEnabled) {
+        document.getElementById('orderBell').play().catch(() => {});
+        audioEnabled = true;
+      }
+    }
 
-document.body.addEventListener('click', enableAudio, { once: true });
-document.body.addEventListener('touchstart', enableAudio, { once: true });
+    document.body.addEventListener('click', enableAudio, { once: true });
+    document.body.addEventListener('touchstart', enableAudio, { once: true });
 
     onChildAdded(ordersRef, (snapshot) => {
-  const order = snapshot.val();
-  const key = snapshot.key;
-  ordersMap[key] = order;
+      const order = snapshot.val();
+      const key = snapshot.key;
+      ordersMap[key] = order;
 
-  // Prevent duplicate order cards
-  if (!document.getElementById(key)) {
-    if (currentView === 'orders') {
-      const card = createOrderCard(order, key, true);
-      ordersDiv.appendChild(card);
-      sortOrderCards(ordersDiv);
-    }
-  }
+      if (!document.getElementById(key)) {
+        if (currentView === 'orders') {
+          const card = createOrderCard(order, key, true);
+          if (card) ordersDiv.appendChild(card);
+          sortOrderCards(ordersDiv);
+        }
+      }
 
-  // Play bell only if not notified yet
-  if (!order.notified) {
-    orderBell.play().catch((err) => {
-      console.warn('Bell sound blocked until user interacts:', err);
+      if (!order.notified) {
+        orderBell.play().catch((err) => {
+          console.warn('Bell sound blocked until user interacts:', err);
+        });
+        update(ref(db, `orders/${key}`), { notified: true });
+      }
     });
 
-    update(ref(db, `orders/${key}`), { notified: true });
-  }
-});
     onChildChanged(ordersRef, (snapshot) => {
       const key = snapshot.key;
       const order = snapshot.val();
       ordersMap[key] = order;
 
       const existingCard = document.getElementById(key);
-      if (existingCard) {
-        const newCard = createOrderCard(order, key, true);
+      const newCard = createOrderCard(order, key, true);
+      if (existingCard && newCard) {
         ordersDiv.replaceChild(newCard, existingCard);
         sortOrderCards(ordersDiv);
-      } else if (currentView === 'orders') {
-        const newCard = createOrderCard(order, key, true);
+      } else if (currentView === 'orders' && newCard) {
         ordersDiv.appendChild(newCard);
         sortOrderCards(ordersDiv);
       }
@@ -353,7 +365,7 @@ document.body.addEventListener('touchstart', enableAudio, { once: true });
       completedMap[key] = order;
       if (currentView === 'history') {
         const card = createOrderCard(order, key, false);
-        historyDiv.appendChild(card);
+        if (card) historyDiv.appendChild(card);
         sortOrderCards(historyDiv);
       }
     });
@@ -403,7 +415,7 @@ document.body.addEventListener('touchstart', enableAudio, { once: true });
       ordersDiv.innerHTML = '';
       for (const key in ordersMap) {
         const card = createOrderCard(ordersMap[key], key, true);
-        ordersDiv.appendChild(card);
+        if (card) ordersDiv.appendChild(card);
       }
       sortOrderCards(ordersDiv);
     }
@@ -412,7 +424,7 @@ document.body.addEventListener('touchstart', enableAudio, { once: true });
       historyDiv.innerHTML = '';
       for (const key in completedMap) {
         const card = createOrderCard(completedMap[key], key, false);
-        historyDiv.appendChild(card);
+        if (card) historyDiv.appendChild(card);
       }
       sortOrderCards(historyDiv);
     }
