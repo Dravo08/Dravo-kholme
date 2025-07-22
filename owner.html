@@ -342,6 +342,11 @@
       <input type="text" id="new-name" placeholder="Item Name" required aria-required="true" />
       <input type="number" id="new-price" placeholder="Price (Rs.)" required min="0" aria-required="true" />
       <input type="text" id="new-category" placeholder="Category" required aria-required="true" />
+<select id="new-type" required aria-required="true">
+  <option value="" disabled selected>Select Type</option>
+  <option value="kitchen">Kitchen</option>
+  <option value="bar">Bar</option>
+</select>
       <button type="submit">Add Item</button>
     </form>
     <div class="menu-grid" id="menu" aria-live="polite" aria-atomic="true"></div>
@@ -648,7 +653,7 @@ function renderOrders(allOrders, filterToDate = null) {
 
   ordersContainer.innerHTML = html || `<p>No orders found for ${targetDate}.</p>`;
   ordersCountEl.innerText = `Completed Orders: ${completedCount}`;
-  cancelledCountEl.innerText = `Cancelled Orders: ${cancelledCount}`;
+ cancelledCountEl.innerText = `Cancelled Orders: ${cancelledCount}`;
   deleteOrdersDayBtn.disabled = completedCount === 0;
 }
 
@@ -731,6 +736,7 @@ deleteOrdersDayBtn.addEventListener('click', async () => {
 window.addEventListener('DOMContentLoaded', loadAllOrders);
 
     // ====== MENU MANAGEMENT SECTION LOGIC ======
+// ====== MENU MANAGEMENT SECTION LOGIC ======
 const menuRef = ref(db, 'menu');
 const menuContainer = document.getElementById('menu');
 const addMenuForm = document.getElementById('add-menu-form');
@@ -742,6 +748,10 @@ function createMenuCard(key, item) {
     <input type="text" class="name-input" value="${item.name}" aria-label="Menu item name" />
     <input type="number" step="0.01" class="price-input" value="${item.price}" min="0" aria-label="Menu item price" />
     <input type="text" class="category-input" value="${item.category}" aria-label="Menu item category" />
+    <select class="type-input" aria-label="Menu item type">
+      <option value="kitchen" ${item.type === 'kitchen' ? 'selected' : ''}>Kitchen</option>
+      <option value="bar" ${item.type === 'bar' ? 'selected' : ''}>Bar</option>
+    </select>
     <div style="display:flex; justify-content:space-between;">
       <button class="save-btn" aria-label="Save menu item changes">Save</button>
       <button class="delete-btn" aria-label="Delete this menu item">Delete</button>
@@ -751,6 +761,7 @@ function createMenuCard(key, item) {
   const nameInput = card.querySelector('.name-input');
   const priceInput = card.querySelector('.price-input');
   const categoryInput = card.querySelector('.category-input');
+  const typeInput = card.querySelector('.type-input');
   const saveBtn = card.querySelector('.save-btn');
   const deleteBtn = card.querySelector('.delete-btn');
 
@@ -758,32 +769,35 @@ function createMenuCard(key, item) {
     const newName = nameInput.value.trim();
     const newPrice = parseFloat(priceInput.value);
     const newCategory = categoryInput.value.trim();
+    const newType = typeInput.value;
 
     console.log('=== SAVE DEBUG ===');
     console.log('Key:', key);
     console.log('New Name:', newName);
     console.log('New Price:', newPrice);
     console.log('New Category:', newCategory);
+    console.log('New Type:', newType);
 
-    if (!newName || isNaN(newPrice) || newPrice < 0 || !newCategory) {
-  alert('Please enter valid item details.');
-  return;
-}
+    if (!newName || isNaN(newPrice) || newPrice < 0 || !newCategory || !newType) {
+      alert('Please enter valid item details.');
+      return;
+    }
 
-try {
-  saveBtn.disabled = true;
-  await update(ref(db, `menu/${key}`), {
-    name: newName,
-    price: newPrice,
-    category: newCategory
-  });
-  alert('Item updated successfully.');
-  loadMenuItems();
-} catch (err) {
-  alert('Failed to update item.');
-  console.error('Save error:', err);
-} finally {
-  saveBtn.disabled = false;
+    try {
+      saveBtn.disabled = true;
+      await update(ref(db, `menu/${key}`), {
+        name: newName,
+        price: newPrice,
+        category: newCategory,
+        type: newType
+      });
+      alert('Item updated successfully.');
+      loadMenuItems();
+    } catch (err) {
+      alert('Failed to update item.');
+      console.error('Save error:', err);
+    } finally {
+      saveBtn.disabled = false;
     }
   });
 
@@ -832,16 +846,19 @@ async function loadMenuItems() {
 
 addMenuForm.addEventListener('submit', async e => {
   e.preventDefault();
+
   const name = document.getElementById('new-name').value.trim();
   const price = parseFloat(document.getElementById('new-price').value);
   const category = document.getElementById('new-category').value.trim();
+  const type = document.getElementById('new-type').value;
 
   console.log('=== ADD DEBUG ===');
   console.log('Name:', name);
   console.log('Price:', price);
   console.log('Category:', category);
+  console.log('Type:', type);
 
-  if (!name || isNaN(price) || price < 0 || !category) {
+  if (!name || isNaN(price) || price < 0 || !category || !type) {
     alert('Please enter valid data.');
     return;
   }
@@ -850,7 +867,7 @@ addMenuForm.addEventListener('submit', async e => {
     const submitBtn = addMenuForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
     console.log('Pushing new item...');
-    await push(menuRef, { name, price, category });
+    await push(menuRef, { name, price, category, type });
     alert('New menu item added.');
     addMenuForm.reset();
     loadMenuItems();
