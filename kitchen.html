@@ -2,104 +2,78 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Kitchen – Kholme</title>
+  <title>Kitchen Dashboard – Kholme</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: "Segoe UI", sans-serif;
       background: #f5f5f5;
+      margin: 0;
+      padding: 20px 0 56px 0;
     }
-    header {
-      background: #333;
-      color: #fff;
-      padding: 10px 20px;
-      font-size: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .tabs {
-      display: flex;
-      background: #eee;
-    }
-    .tab {
-      flex: 1;
+    h1 {
       text-align: center;
-      padding: 12px;
-      font-weight: bold;
+      margin: 10px 0;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    .top-bar button {
+      margin: 0 5px;
+      padding: 10px 20px;
+      border: none;
+      background: #6a1b9a;
+      color: white;
+      border-radius: 5px;
       cursor: pointer;
-      border-bottom: 2px solid transparent;
     }
-    .tab.active {
-      background: #fff;
-      border-bottom: 2px solid #5d4037;
-    }
-    .orders {
-      padding: 20px;
+    .top-bar button.active {
+      background: #ab47bc;
     }
     .order-card {
       background: white;
+      margin: 10px auto;
+      padding: 15px;
       border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-      padding: 12px;
-      margin-bottom: 15px;
-      border-left: 6px solid #ccc;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 500px;
     }
-    .order-card.processing {
-      border-left-color: orange;
+    .order-card h3 {
+      margin: 0 0 10px;
     }
-    .order-card.completed {
-      border-left-color: green;
+    .order-card p {
+      margin: 5px 0;
     }
-    .status-btns button {
-      margin-right: 8px;
-      margin-top: 10px;
+    .order-card button {
+      margin-right: 10px;
       padding: 5px 10px;
       border: none;
       border-radius: 4px;
       cursor: pointer;
     }
-    .status-btns .pending {
-      background: #ddd;
-    }
-    .status-btns .processing {
-      background: orange;
-      color: white;
-    }
-    .status-btns .completed {
-      background: green;
-      color: white;
-    }
-    button.logout {
-      background: #c62828;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
+    .pending { background-color: #fff176; }
+    .processing { background-color: #64b5f6; }
+    .completed { background-color: #81c784; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
-  <header>
-    <span>👨‍🍳 Kitchen – Kholme</span>
-    <button id="logoutBtn" class="logout">Logout</button>
-  </header>
-
-  <div class="tabs">
-    <div id="ordersTab" class="tab active">Orders</div>
-    <div id="historyTab" class="tab">History</div>
+  <h1>🍽️ Kitchen Dashboard – Kholme</h1>
+  <div class="top-bar">
+    <button id="ordersTab" class="active">Orders</button>
+    <button id="historyTab">History</button>
   </div>
-
-  <div id="orders" class="orders"></div>
-  <div id="history" class="orders" style="display: none;"></div>
+  <div id="ordersSection" class="section active"></div>
+  <div id="historySection" class="section hidden"></div>
 
   <audio id="orderBell" src="bell.mp3" preload="auto"></audio>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-    import { getDatabase, ref, onChildAdded, onChildChanged, update, set, remove, get } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+    import { getDatabase, ref, onChildAdded, update, remove, get, child } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
@@ -115,87 +89,109 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const ordersRef = ref(db, "orders");
-    const completedOrdersRef = ref(db, "completedOrders");
-
-    const ordersDiv = document.getElementById("orders");
-    const historyDiv = document.getElementById("history");
+    const ordersDiv = document.getElementById("ordersSection");
+    const historyDiv = document.getElementById("historySection");
     const orderBell = document.getElementById("orderBell");
+
+    const ordersRef = ref(db, "orders");
+    const completedRef = ref(db, "completedOrders");
 
     const ordersTab = document.getElementById("ordersTab");
     const historyTab = document.getElementById("historyTab");
-    const logoutBtn = document.getElementById("logoutBtn");
 
     let currentView = "orders";
-    let ordersMap = {};
+    const ordersMap = {};
+
+    // 🔊 Enable bell after first interaction
+    let audioEnabled = false;
+    function enableAudio() {
+      if (!audioEnabled) {
+        document.getElementById("orderBell").play().catch(() => {});
+        audioEnabled = true;
+      }
+    }
+    document.body.addEventListener("click", enableAudio, { once: true });
+    document.body.addEventListener("touchstart", enableAudio, { once: true });
 
     ordersTab.addEventListener("click", () => {
       currentView = "orders";
       ordersTab.classList.add("active");
       historyTab.classList.remove("active");
-      ordersDiv.style.display = "block";
-      historyDiv.style.display = "none";
+      ordersDiv.classList.remove("hidden");
+      historyDiv.classList.add("hidden");
     });
 
     historyTab.addEventListener("click", () => {
       currentView = "history";
       ordersTab.classList.remove("active");
       historyTab.classList.add("active");
-      ordersDiv.style.display = "none";
-      historyDiv.style.display = "block";
-      loadHistory();
+      ordersDiv.classList.add("hidden");
+      historyDiv.classList.remove("hidden");
+      loadCompletedOrders();
     });
 
-    logoutBtn.addEventListener("click", () => {
-      window.location.href = "kitchen-login.html";
-    });
-
-    function createOrderCard(order, key, isLive = true) {
+    function createOrderCard(order, key, isLive = false) {
       const div = document.createElement("div");
-      div.className = "order-card " + (order.status || "");
+      div.className = "order-card";
       div.id = key;
 
+      const time = new Date(order.timestamp || Date.now()).toLocaleTimeString();
+
       div.innerHTML = `
-        <div><strong>Items:</strong></div>
-        <ul>${order.items.map(i => `<li>${i.name} × ${i.quantity}</li>`).join("")}</ul>
-        <div><strong>Note:</strong> ${order.note || "-"}</div>
-        <div><strong>Status:</strong> ${order.status || "pending"}</div>
+        <h3>Order ID: ${key}</h3>
+        <p><strong>Time:</strong> ${time}</p>
+        <p><strong>Status:</strong> ${order.status || "Pending"}</p>
+        <div>${order.items.map(item => `<p>🍽️ ${item.name} x${item.quantity}</p>`).join("")}</div>
       `;
 
       if (isLive) {
-        const statusDiv = document.createElement("div");
-        statusDiv.className = "status-btns";
-        ["pending", "processing", "completed"].forEach(s => {
-          const btn = document.createElement("button");
-          btn.className = s;
-          btn.textContent = s;
-          btn.onclick = () => updateStatus(key, s, div);
-          statusDiv.appendChild(btn);
-        });
-        div.appendChild(statusDiv);
+        const pendingBtn = document.createElement("button");
+        pendingBtn.textContent = "Pending";
+        pendingBtn.className = "pending";
+        pendingBtn.onclick = () => updateStatus(key, "Pending");
+
+        const processingBtn = document.createElement("button");
+        processingBtn.textContent = "Processing";
+        processingBtn.className = "processing";
+        processingBtn.onclick = () => updateStatus(key, "Processing");
+
+        const completeBtn = document.createElement("button");
+        completeBtn.textContent = "Complete";
+        completeBtn.className = "completed";
+        completeBtn.onclick = () => completeOrder(key);
+
+        div.appendChild(pendingBtn);
+        div.appendChild(processingBtn);
+        div.appendChild(completeBtn);
       }
 
       return div;
     }
 
-    function updateStatus(key, status, div) {
-      const newData = { ...ordersMap[key], status };
-      update(ref(db, `orders/${key}`), newData);
-      div.className = "order-card " + status;
-
-      if (status === "completed") {
-        set(ref(db, `completedOrders/${key}`), newData);
-        remove(ref(db, `orders/${key}`));
-        if (document.getElementById(key)) {
-          document.getElementById(key).remove();
-        }
-      }
+    function updateStatus(key, status) {
+      update(ref(db, `orders/${key}`), { status });
     }
 
-    function sortOrderCards(container) {
-      const cards = Array.from(container.children);
-      cards.sort((a, b) => a.id.localeCompare(b.id));
-      cards.forEach(c => container.appendChild(c));
+    function completeOrder(key) {
+      get(child(ref(db), `orders/${key}`)).then(snapshot => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          remove(ref(db, `orders/${key}`));
+          update(ref(db, `completedOrders/${key}`), data);
+        }
+      });
+    }
+
+    function loadCompletedOrders() {
+      get(completedRef).then(snapshot => {
+        historyDiv.innerHTML = "";
+        snapshot.forEach(childSnap => {
+          const order = childSnap.val();
+          const key = childSnap.key;
+          const card = createOrderCard(order, key, false);
+          historyDiv.appendChild(card);
+        });
+      });
     }
 
     onChildAdded(ordersRef, (snapshot) => {
@@ -203,57 +199,22 @@
       const key = snapshot.key;
       ordersMap[key] = order;
 
+      // Prevent duplicate display
       if (!document.getElementById(key)) {
-        if (currentView === 'orders') {
+        if (currentView === "orders") {
           const card = createOrderCard(order, key, true);
           ordersDiv.appendChild(card);
-          sortOrderCards(ordersDiv);
         }
       }
 
+      // Play bell sound only if not notified before
       if (!order.notified) {
         orderBell.play().catch((err) => {
-          console.warn("Bell blocked, waiting for user interaction.");
+          console.warn("Bell sound blocked:", err);
         });
         update(ref(db, `orders/${key}`), { notified: true });
       }
     });
-
-    onChildChanged(ordersRef, (snapshot) => {
-      const order = snapshot.val();
-      const key = snapshot.key;
-      ordersMap[key] = order;
-
-      const existing = document.getElementById(key);
-      if (existing) {
-        existing.className = "order-card " + (order.status || "");
-        existing.querySelector("div:nth-child(4)").textContent = `Status: ${order.status || "pending"}`;
-      }
-    });
-
-    function loadHistory() {
-      historyDiv.innerHTML = "";
-      get(completedOrdersRef).then(snapshot => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          Object.keys(data).sort().forEach(key => {
-            const card = createOrderCard(data[key], key, false);
-            historyDiv.appendChild(card);
-          });
-        }
-      });
-    }
-
-    // 🔓 Allow bell sound after first user interaction
-    let audioEnabled = false;
-    function enableAudio() {
-      if (!audioEnabled) {
-        document.getElementById('orderBell').play().catch(() => {});
-        audioEnabled = true;
-      }
-    }
-    document.body.addEventListener('click', enableAudio, { once: true });
-    document.body.addEventListener('touchstart', enableAudio, { once: true });
   </script>
 </body>
 </html>
