@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Kitchen Dashboard – Kholme</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kitchen Dashboard –kholm</title>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -12,75 +11,143 @@
       padding: 20px 0 56px 0;
     }
     h1 {
+      color: #4e342e;
       text-align: center;
-      margin: 10px 0;
+      margin-bottom: 20px;
     }
-    .top-bar {
+
+    #orders, #history {
       display: flex;
-      justify-content: center;
-      margin-bottom: 10px;
+      flex-direction: column;
+      gap: 12px;
+      padding: 0 20px;
     }
-    .top-bar button {
-      margin: 0 5px;
-      padding: 10px 20px;
-      border: none;
-      background: #6a1b9a;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
+
+    #history {
+      display: none;
     }
-    .top-bar button.active {
-      background: #ab47bc;
-    }
+
     .order-card {
       background: white;
-      margin: 10px auto;
-      padding: 15px;
       border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      width: 90%;
-      max-width: 500px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+      padding: 15px;
+      border-left: 5px solid #8bc34a;
+      transition: border-color 0.3s;
     }
-    .order-card h3 {
-      margin: 0 0 10px;
+
+    .order-header {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 4px;
     }
-    .order-card p {
-      margin: 5px 0;
+
+    .order-info {
+      margin-bottom: 8px;
+      color: #333;
+      white-space: pre-line;
     }
-    .order-card button {
-      margin-right: 10px;
+
+    .status-buttons button {
+      margin-right: 6px;
       padding: 5px 10px;
+      font-size: 13px;
       border: none;
       border-radius: 4px;
       cursor: pointer;
+      transition: background-color 0.3s;
     }
-    .pending { background-color: #fff176; }
-    .processing { background-color: #64b5f6; }
-    .completed { background-color: #81c784; }
-    .hidden { display: none; }
+
+    .pending { background: #ffcc80; }
+    .processing { background: #81d4fa; }
+    .completed { background: #aed581; }
+    .cancel { background: #ef9a9a; }
+
+    #logout {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      background: #5d4037;
+      color: #fff;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 999;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 48px;
+      background: #5d4037;
+      border-top: 1px solid #4a2e1a;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+      z-index: 999;
+      font-size: 20px;
+      color: #ddd;
+      user-select: none;
+    }
+
+    .nav-button {
+      flex-grow: 1;
+      text-align: center;
+      cursor: pointer;
+      padding: 6px 0;
+      transition: color 0.3s, border-top 0.3s;
+      font-weight: 600;
+    }
+
+    .nav-button.active {
+      color: #f0e6d2;
+      border-top: 3px solid #8bc34a;
+      font-weight: 700;
+    }
+
+    #history .status-buttons {
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <h1>🍽️ Kitchen Dashboard – Kholme</h1>
-  <div class="top-bar">
-    <button id="ordersTab" class="active">Orders</button>
-    <button id="historyTab">History</button>
+  <h1>👨‍🍳 Kitchen Dashboard</h1>
+  <button id="logout">Logout</button>
+  <div id="orders"></div>
+  <div id="history"></div>
+  <div class="bottom-nav">
+    <div id="btnOrders" class="nav-button active" title="Orders">🧾 Orders</div>
+    <div id="btnHistory" class="nav-button" title="History">📜 History</div>
   </div>
-  <div id="ordersSection" class="section active"></div>
-  <div id="historySection" class="section hidden"></div>
-
-  <audio id="orderBell" src="bell.mp3" preload="auto"></audio>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-    import { getDatabase, ref, onChildAdded, update, remove, get, child } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+    import {
+      getDatabase,
+      ref,
+      onChildAdded,
+      onChildRemoved,
+      onChildChanged,
+      set,
+      remove,
+      update
+    } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
       authDomain: "kholme-menu1.firebaseapp.com",
       databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
       projectId: "kholme-menu1",
-      storageBucket: "kholme-menu1.appspot.com",
+      storageBucket: "kholme-menu1.firebasestorage.app",
       messagingSenderId: "434798935284",
       appId: "1:434798935284:web:527ae90b4d4833a30ff2a1",
       measurementId: "G-9XG8BZ9YXK"
@@ -88,133 +155,270 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const auth = getAuth();
 
-    const ordersDiv = document.getElementById("ordersSection");
-    const historyDiv = document.getElementById("historySection");
-    const orderBell = document.getElementById("orderBell");
+    const ordersRef = ref(db, 'orders');
+    const completedRef = ref(db, 'completedOrders');
 
-    const ordersRef = ref(db, "orders");
-    const completedRef = ref(db, "completedOrders");
+    const ordersDiv = document.getElementById('orders');
+    const historyDiv = document.getElementById('history');
+    const logoutBtn = document.getElementById('logout');
+    const orderBell = document.getElementById('orderBell');
 
-    const ordersTab = document.getElementById("ordersTab");
-    const historyTab = document.getElementById("historyTab");
+    logoutBtn.addEventListener('click', () => {
+      signOut(auth).then(() => {
+        window.location.href = 'kitchen-login.html';
+      });
+    });
 
-    let currentView = "orders";
-    const ordersMap = {};
-
-    // 🔊 Enable bell after first interaction
-    let audioEnabled = false;
-    function enableAudio() {
-      if (!audioEnabled) {
-        document.getElementById("orderBell").play().catch(() => {});
-        audioEnabled = true;
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "kitchen-login.html";
       }
+    });
+
+    function formatItems(items) {
+      return items.map(i => {
+        const qty = i.quantity || 1;
+        const pricePer = i.price || 0;
+        const total = qty * pricePer;
+        return `${i.name || "Unnamed"} / Qty: ${qty} / Rs.${pricePer} each / Total: Rs.${total}`;
+      }).join('\n');
     }
-    document.body.addEventListener("click", enableAudio, { once: true });
-    document.body.addEventListener("touchstart", enableAudio, { once: true });
 
-    ordersTab.addEventListener("click", () => {
-      currentView = "orders";
-      ordersTab.classList.add("active");
-      historyTab.classList.remove("active");
-      ordersDiv.classList.remove("hidden");
-      historyDiv.classList.add("hidden");
-    });
+    function createOrderCard(order, key, showStatusButtons = true) {
+      let orderName = order.name || (order.items && order.items.length > 0 && order.items[0].name) || "Unnamed Item";
 
-    historyTab.addEventListener("click", () => {
-      currentView = "history";
-      ordersTab.classList.remove("active");
-      historyTab.classList.add("active");
-      ordersDiv.classList.add("hidden");
-      historyDiv.classList.remove("hidden");
-      loadCompletedOrders();
-    });
+      let priceDisplay = '';
+      if (order.status === 'cancelled') {
+        priceDisplay = `<strong style="color:red;">❌ Cancelled:</strong> ${order.note || ''}`;
+      } else if (order.price) {
+        priceDisplay = `Price: Rs. ${order.price}`;
+      } else if (order.items && order.items.length > 0) {
+        const totalPrice = order.items.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0);
+        priceDisplay = `Total Price: Rs. ${totalPrice}\nDetails:\n${formatItems(order.items)}`;
+      } else {
+        priceDisplay = "Price: N/A";
+      }
 
-    function createOrderCard(order, key, isLive = false) {
-      const div = document.createElement("div");
-      div.className = "order-card";
+      const time = new Date(order.timestamp).toLocaleTimeString();
+      const tableNumber = order.table || order.tableNumber || 'N/A';
+
+      const div = document.createElement('div');
+      div.className = 'order-card';
       div.id = key;
 
-      const time = new Date(order.timestamp || Date.now()).toLocaleTimeString();
-
       div.innerHTML = `
-        <h3>Order ID: ${key}</h3>
-        <p><strong>Time:</strong> ${time}</p>
-        <p><strong>Status:</strong> ${order.status || "Pending"}</p>
-        <div>${order.items.map(item => `<p>🍽️ ${item.name} x${item.quantity}</p>`).join("")}</div>
+        <div class="order-header">${orderName} – Table ${tableNumber}</div>
+        <div class="order-info">${priceDisplay.replace(/\n/g, '<br>')}</div>
+        <div class="order-info">🕒 ${time}</div>
+        <div class="order-info">📋 Notes: ${order.note || order.description || "None"}</div>
+        ${showStatusButtons ? `
+          <div class="status-buttons">
+            <button class="pending">Pending</button>
+            <button class="processing">Processing</button>
+            <button class="completed">Completed</button>
+            <button class="cancel">Cancel</button>
+          </div>` : ''}
       `;
 
-      if (isLive) {
-        const pendingBtn = document.createElement("button");
-        pendingBtn.textContent = "Pending";
-        pendingBtn.className = "pending";
-        pendingBtn.onclick = () => updateStatus(key, "Pending");
+      switch (order.status) {
+        case 'pending':
+          div.style.borderLeft = '5px solid #ffcc80';
+          break;
+        case 'processing':
+          div.style.borderLeft = '5px solid #81d4fa';
+          break;
+        case 'completed':
+          div.style.borderLeft = '5px solid #aed581';
+          break;
+        case 'cancelled':
+          div.style.borderLeft = '5px solid #ef5350';
+          div.querySelector('.order-header').innerHTML += ' – ❌ Cancelled';
+          break;
+        default:
+          div.style.borderLeft = '5px solid #8bc34a';
+      }
 
-        const processingBtn = document.createElement("button");
-        processingBtn.textContent = "Processing";
-        processingBtn.className = "processing";
-        processingBtn.onclick = () => updateStatus(key, "Processing");
+      if (showStatusButtons) {
+        const buttons = div.querySelectorAll('.status-buttons button');
 
-        const completeBtn = document.createElement("button");
-        completeBtn.textContent = "Complete";
-        completeBtn.className = "completed";
-        completeBtn.onclick = () => completeOrder(key);
+        buttons[0].addEventListener('click', () => {
+          update(ref(db, `orders/${key}`), { status: 'pending' });
+        });
 
-        div.appendChild(pendingBtn);
-        div.appendChild(processingBtn);
-        div.appendChild(completeBtn);
+        buttons[1].addEventListener('click', () => {
+          update(ref(db, `orders/${key}`), { status: 'processing' });
+        });
+
+        buttons[2].addEventListener('click', async () => {
+          try {
+            const finalStatus = order.status === 'cancelled' ? 'cancelled' : 'completed';
+            const finalNote = order.status === 'cancelled' ? (order.note || 'Sorry we don’t have it now') : '';
+
+            await set(ref(db, `completedOrders/${key}`), {
+              ...order,
+              status: finalStatus,
+              note: finalNote
+            });
+
+            await remove(ref(db, `orders/${key}`));
+            div.remove();
+            delete ordersMap[key];
+
+            if (currentView === 'history') {
+              renderHistory();
+            }
+          } catch (err) {
+            alert("Error moving order to history: " + err.message);
+          }
+        });
+
+        buttons[3].addEventListener('click', async () => {
+          try {
+            await update(ref(db, `orders/${key}`), { status: 'cancelled', note: 'Sorry we don’t have it now' });
+          } catch (err) {
+            alert("Error cancelling order: " + err.message);
+          }
+        });
       }
 
       return div;
     }
 
-    function updateStatus(key, status) {
-      update(ref(db, `orders/${key}`), { status });
-    }
+    const ordersMap = {};
+    const completedMap = {};
+let audioEnabled = false;
 
-    function completeOrder(key) {
-      get(child(ref(db), `orders/${key}`)).then(snapshot => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          remove(ref(db, `orders/${key}`));
-          update(ref(db, `completedOrders/${key}`), data);
-        }
-      });
-    }
+function enableAudio() {
+  if (!audioEnabled) {
+    document.getElementById('orderBell').play().catch(() => {});
+    audioEnabled = true;
+  }
+}
 
-    function loadCompletedOrders() {
-      get(completedRef).then(snapshot => {
-        historyDiv.innerHTML = "";
-        snapshot.forEach(childSnap => {
-          const order = childSnap.val();
-          const key = childSnap.key;
-          const card = createOrderCard(order, key, false);
-          historyDiv.appendChild(card);
-        });
-      });
-    }
+document.body.addEventListener('click', enableAudio, { once: true });
+document.body.addEventListener('touchstart', enableAudio, { once: true });
 
     onChildAdded(ordersRef, (snapshot) => {
-      const order = snapshot.val();
+  const order = snapshot.val();
+  const key = snapshot.key;
+  ordersMap[key] = order;
+
+  // Prevent duplicate order cards
+  if (!document.getElementById(key)) {
+    if (currentView === 'orders') {
+      const card = createOrderCard(order, key, true);
+      ordersDiv.appendChild(card);
+      sortOrderCards(ordersDiv);
+    }
+  }
+
+  // Play bell only if not notified yet
+  if (!order.notified) {
+    orderBell.play().catch((err) => {
+      console.warn('Bell sound blocked until user interacts:', err);
+    });
+
+    update(ref(db, `orders/${key}`), { notified: true });
+  }
+});
+    onChildChanged(ordersRef, (snapshot) => {
       const key = snapshot.key;
+      const order = snapshot.val();
       ordersMap[key] = order;
 
-      // Prevent duplicate display
-      if (!document.getElementById(key)) {
-        if (currentView === "orders") {
-          const card = createOrderCard(order, key, true);
-          ordersDiv.appendChild(card);
-        }
-      }
-
-      // Play bell sound only if not notified before
-      if (!order.notified) {
-        orderBell.play().catch((err) => {
-          console.warn("Bell sound blocked:", err);
-        });
-        update(ref(db, `orders/${key}`), { notified: true });
+      const existingCard = document.getElementById(key);
+      if (existingCard) {
+        const newCard = createOrderCard(order, key, true);
+        ordersDiv.replaceChild(newCard, existingCard);
+        sortOrderCards(ordersDiv);
+      } else if (currentView === 'orders') {
+        const newCard = createOrderCard(order, key, true);
+        ordersDiv.appendChild(newCard);
+        sortOrderCards(ordersDiv);
       }
     });
+
+    onChildRemoved(ordersRef, (snapshot) => {
+      const key = snapshot.key;
+      delete ordersMap[key];
+      const el = document.getElementById(key);
+      if (el && el.parentNode === ordersDiv) el.remove();
+    });
+
+    onChildAdded(completedRef, (snapshot) => {
+      const order = snapshot.val();
+      const key = snapshot.key;
+      completedMap[key] = order;
+      if (currentView === 'history') {
+        const card = createOrderCard(order, key, false);
+        historyDiv.appendChild(card);
+        sortOrderCards(historyDiv);
+      }
+    });
+
+    onChildRemoved(completedRef, (snapshot) => {
+      const key = snapshot.key;
+      delete completedMap[key];
+      const el = document.getElementById(key);
+      if (el && el.parentNode === historyDiv) el.remove();
+    });
+
+    function sortOrderCards(container) {
+      const cards = Array.from(container.children);
+      cards.sort((a, b) => {
+        const timeA = new Date(ordersMap[a.id]?.timestamp || completedMap[a.id]?.timestamp || 0).getTime();
+        const timeB = new Date(ordersMap[b.id]?.timestamp || completedMap[b.id]?.timestamp || 0).getTime();
+        return timeA - timeB;
+      });
+      cards.forEach(card => container.appendChild(card));
+    }
+
+    const btnOrders = document.getElementById('btnOrders');
+    const btnHistory = document.getElementById('btnHistory');
+    let currentView = 'orders';
+
+    btnOrders.addEventListener('click', () => {
+      if (currentView === 'orders') return;
+      currentView = 'orders';
+      btnOrders.classList.add('active');
+      btnHistory.classList.remove('active');
+      historyDiv.style.display = 'none';
+      ordersDiv.style.display = 'flex';
+      renderOrders();
+    });
+
+    btnHistory.addEventListener('click', () => {
+      if (currentView === 'history') return;
+      currentView = 'history';
+      btnHistory.classList.add('active');
+      btnOrders.classList.remove('active');
+      ordersDiv.style.display = 'none';
+      historyDiv.style.display = 'flex';
+      renderHistory();
+    });
+
+    function renderOrders() {
+      ordersDiv.innerHTML = '';
+      for (const key in ordersMap) {
+        const card = createOrderCard(ordersMap[key], key, true);
+        ordersDiv.appendChild(card);
+      }
+      sortOrderCards(ordersDiv);
+    }
+
+    function renderHistory() {
+      historyDiv.innerHTML = '';
+      for (const key in completedMap) {
+        const card = createOrderCard(completedMap[key], key, false);
+        historyDiv.appendChild(card);
+      }
+      sortOrderCards(historyDiv);
+    }
   </script>
+
+  <!-- 🔔 Audio for bell -->
+  <audio id="orderBell" src="https://dravo08.github.io/Dravo-kholme/bell.mp3" preload="auto"></audio>
 </body>
 </html>
