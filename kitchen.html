@@ -8,159 +8,254 @@
       font-family: "Segoe UI", sans-serif;
       background: #f5f5f5;
       margin: 0;
-      padding: 20px;
+      padding: 20px 0 56px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     h1 {
-      text-align: center;
       color: #4e342e;
+      text-align: center;
+      margin-bottom: 10px;
     }
-    h2 {
-      margin-top: 40px;
-      color: #333;
-      border-bottom: 2px solid #ccc;
-      padding-bottom: 5px;
+
+    #container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
-    .order-section {
-      margin-top: 20px;
+    #foodSection, #barSection {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 20px;
     }
+    #separator {
+      text-align: center;
+      font-size: 14px;
+      color: #888;
+      padding: 4px 0;
+      background: #f5f5f5;
+    }
+
     .order-card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
       padding: 15px;
-      margin: 10px 0;
-      border-left: 6px solid #ccc;
+      margin-bottom: 12px;
+      border-left: 5px solid #8bc34a;
       transition: border-color 0.3s;
     }
-    .order-card h3 {
-      margin: 0 0 10px;
-    }
-    .order-card ul {
-      padding-left: 20px;
-      margin: 0 0 10px;
-    }
-    .status-buttons {
-      display: flex;
-      gap: 8px;
-    }
+    .order-header { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
+    .order-info { margin-bottom: 8px; color: #333; white-space: pre-line; }
     .status-buttons button {
-      padding: 5px 12px;
+      margin-right: 6px;
+      padding: 5px 10px;
+      font-size: 13px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .pending { background: #ffcc80; }
+    .processing { background: #81d4fa; }
+    .completed { background: #aed581; }
+    .cancel { background: #ef9a9a; }
+
+    #logout {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      background: #5d4037;
+      color: #fff;
+      padding: 8px 14px;
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      font-weight: bold;
+      z-index: 999;
     }
-    .pending { background: #ffecb3; }
-    .processing { background: #b3e5fc; }
-    .completed { background: #c8e6c9; }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 48px;
+      background: #5d4037;
+      border-top: 1px solid #4a2e1a;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+      z-index: 999;
+      font-size: 20px;
+      color: #ddd;
+    }
+    .nav-button {
+      flex-grow: 1;
+      text-align: center;
+      cursor: pointer;
+      padding: 6px 0;
+      transition: color 0.3s, border-top 0.3s;
+      font-weight: 600;
+    }
+    .nav-button.active {
+      color: #f0e6d2;
+      border-top: 3px solid #8bc34a;
+      font-weight: 700;
+    }
   </style>
 </head>
 <body>
-  <h1>Kitchen Dashboard – Kholm</h1>
+  <h1>👨‍🍳 Kitchen Dashboard</h1>
+  <button id="logout">Logout</button>
 
-  <div class="order-section">
-    <h2>🍽️ Food Orders</h2>
-    <div id="foodOrders"></div>
+  <div id="container">
+    <div id="foodSection"></div>
+    <div id="separator">— Bar Orders —</div>
+    <div id="barSection"></div>
   </div>
 
-  <div class="order-section">
-    <h2>🥤 Bar Orders</h2>
-    <div id="barOrders"></div>
+  <audio id="orderBell" src="https://dravo08.github.io/Dravo-kholme/bell.mp3" preload="auto"></audio>
+
+  <div class="bottom-nav">
+    <div id="btnOrders" class="nav-button active" title="Orders">🧾 Orders</div>
+    <div id="btnHistory" class="nav-button" title="History">📜 History</div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-    import { getDatabase, ref, onChildAdded, onChildRemoved, remove, set } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+import { getDatabase, ref, onChildAdded, onChildChanged, onChildRemoved, set, remove, update } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyATGDe4NI75RSny4ZbE3WDtaUoUivjv3E8",
-      authDomain: "digital-menu-woodengarden.firebaseapp.com",
-      databaseURL: "https://digital-menu-woodengarden-default-rtdb.firebaseio.com",
-      projectId: "digital-menu-woodengarden",
-      storageBucket: "digital-menu-woodengarden.appspot.com",
-      messagingSenderId: "614041074109",
-      appId: "1:614041074109:web:fe2f804505b82a92b7ecff"
-    };
+const barCategories = ["Hot Beverages","Cold Beverage","Iced Coffee Alternatives","Blended Beverage","Icecream","V60","Soft Drinks","Lassi","Hot Drinks Alternatives"];
+const excludedSet = new Set(barCategories);
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+const firebaseConfig = {
+  apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
+  authDomain: "kholme-menu1.firebaseapp.com",
+  databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
+  projectId: "kholme-menu1",
+  storageBucket: "kholme-menu1.appspot.com",
+  messagingSenderId: "434798935284",
+  appId: "1:434798935284:web:527ae90b4d4833a30ff2a1"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth();
 
-    const foodOrdersDiv = document.getElementById('foodOrders');
-    const barOrdersDiv = document.getElementById('barOrders');
+const ordersRef = ref(db, 'orders');
+const completedRef = ref(db, 'completedOrders');
+const foodSection = document.getElementById('foodSection');
+const barSection = document.getElementById('barSection');
+const logoutBtn = document.getElementById('logout');
+const orderBell = document.getElementById('orderBell');
+const btnOrders = document.getElementById('btnOrders');
+const btnHistory = document.getElementById('btnHistory');
 
-    const barCategories = [
-      "Hot Beverages",
-      "Cold Beverage",
-      "Iced Coffee Alternatives",
-      "Blended Beverage",
-      "Icecream",
-      "V60",
-      "Soft Drinks",
-      "Lassi",
-      "Hot Drinks Alternatives"
-    ];
+logoutBtn.onclick = () => signOut(auth).then(() => location.href = 'kitchen-login.html');
+onAuthStateChanged(auth, user => { if (!user) location.href = 'kitchen-login.html'; });
 
-    function isBarOnlyOrder(order) {
-      if (!order.items || !Array.isArray(order.items)) return false;
-      return order.items.every(item => barCategories.includes(item.category));
-    }
+const ordersMap = {};
+const completedMap = {};
+let currentView = 'orders';
 
-    function createOrderCard(order, key) {
-      const card = document.createElement("div");
-      card.className = "order-card";
-      card.id = `order-${key}`;
+function formatItems(items) {
+  return items.map(i => {
+    const q = i.quantity||1, p = i.price||0;
+    return `${i.name} / Qty: ${q} / Rs.${p} each / Total: Rs.${q*p}`;
+  }).join('\n');
+}
 
-      const name = order.name || (order.items[0]?.name) || "Unnamed Order";
+function isBarOnly(order){
+  if(!Array.isArray(order.items)) return false;
+  return order.items.every(item => excludedSet.has(item.category));
+}
 
-      card.innerHTML = `
-        <h3>${name}</h3>
-        <ul>
-          ${order.items.map(item => `
-            <li>${item.name} – Qty: ${item.quantity} – Rs. ${item.price || 0}</li>
-          `).join('')}
-        </ul>
-        <div class="status-buttons">
-          <button class="pending">Pending</button>
-          <button class="processing">Processing</button>
-          <button class="completed">Completed</button>
-        </div>
-      `;
+function createOrderCard(order, key, showBtns){
+  if(!Array.isArray(order.items)) return null;
+  const allBar = isBarOnly(order);
+  if(!allBar && currentView!=='orders') return null;
+  if(allBar && currentView!== 'orders') return null;
+  if(currentView==='orders' && showBtns){
+    // top = food; if it's bar-only, go bottom
+    if(allBar) attachCard(barSection,key,order,showBtns);
+    else attachCard(foodSection,key,order,showBtns);
+    return null;
+  }
+  return null;
+}
 
-      const [pendingBtn, processingBtn, completedBtn] = card.querySelectorAll("button");
+function attachCard(container, key, order, showBtns){
+  let priceStr = order.status==='cancelled'
+    ? `<strong style="color:red;">❌ Cancelled:</strong> ${order.note||''}`
+    : order.price
+      ? `Price: Rs. ${order.price}`
+      : `Total Price: Rs. ${order.items.reduce((s,i)=>s+(i.price||0)*(i.quantity||1),0)}\nDetails:\n${formatItems(order.items)}`;
 
-      pendingBtn.onclick = () => card.style.borderLeftColor = "#ff9800";
-      processingBtn.onclick = () => card.style.borderLeftColor = "#03a9f4";
-      completedBtn.onclick = () => {
-        remove(ref(db, `orders/${key}`));
-        const completedData = { ...order, completedAt: new Date().toISOString() };
-        const newRef = ref(db, `completedOrders/${key}`);
-        set(newRef, completedData);
-      };
+  const time = new Date(order.timestamp).toLocaleTimeString();
+  const table = order.table||order.tableNumber||'N/A';
 
-      return card;
-    }
+  const div = document.createElement('div');
+  div.className='order-card';
+  div.id=key;
+  div.innerHTML = `
+    <div class="order-header">${order.name||order.items[0].name||'Unnamed'} – Table ${table}</div>
+    <div class="order-info">${priceStr.replace(/\n/g,'<br>')}</div>
+    <div class="order-info">🕒 ${time}</div>
+    <div class="order-info">📋 Notes: ${order.note||order.description||'None'}</div>
+    <div class="status-buttons">
+      <button class="pending">Pending</button>
+      <button class="processing">Processing</button>
+      <button class="completed">Completed</button>
+      <button class="cancel">Cancel</button>
+    </div>`;
+  const [b0,b1,b2,b3] = div.querySelectorAll('button');
+  b0.onclick=()=>update(ref(db,`orders/${key}`),{status:'pending'});
+  b1.onclick=()=>update(ref(db,`orders/${key}`),{status:'processing'});
+  b2.onclick=async()=>{
+    const finalSt = order.status==='cancelled'?'cancelled':'completed';
+    const finalNote=order.status==='cancelled'?order.note||'Sorry we don’t have it now':'';
+    await set(ref(db,`completedOrders/${key}`),{...order,status:finalSt,note:finalNote});
+    await remove(ref(db,`orders/${key}`));
+  };
+  b3.onclick=()=>update(ref(db,`orders/${key}`),{status:'cancelled',note:'Sorry we don’t have it now'});
+  div.style.borderLeft = `5px solid ${
+    order.status==='pending'?'#ffcc80':
+    order.status==='processing'?'#81d4fa':
+    order.status==='completed'?'#aed581':
+    order.status==='cancelled'?'#ef5350':'#8bc34a'}`;
+  container.appendChild(div);
+}
 
-    const ordersRef = ref(db, 'orders');
+onChildAdded(ordersRef, snapshot=>{
+  const k=snapshot.key,o=snapshot.val(); ordersMap[k]=o;
+  const allBar=isBarOnly(o);
+  if(currentView==='orders'){
+    if(allBar) attachCard(barSection,k,o,true);
+    else attachCard(foodSection,k,o,true);
+  }
+  if(!o.notified){ orderBell.play().catch(()=>{}); update(ref(db,`orders/${k}`),{notified:true});}
+});
 
-    onChildAdded(ordersRef, (snapshot) => {
-      const key = snapshot.key;
-      const order = snapshot.val();
+onChildRemoved(ordersRef,snap=>{
+  const card=document.getElementById(snap.key);
+  if(card) card.remove();
+});
 
-      const card = createOrderCard(order, key);
-      if (!card) return;
+btnOrders.onclick=()=>{
+  currentView='orders';
+  btnOrders.classList.add('active');
+  btnHistory.classList.remove('active');
+  foodSection.parentElement.style.display='flex';
+};
 
-      if (isBarOnlyOrder(order)) {
-        barOrdersDiv.appendChild(card);
-      } else {
-        foodOrdersDiv.appendChild(card);
-      }
-    });
+btnHistory.onclick=()=>{
+  currentView='history';
+  btnHistory.classList.add('active');
+  btnOrders.classList.remove('active');
+  foodSection.parentElement.style.display='none';
+};
 
-    onChildRemoved(ordersRef, (snapshot) => {
-      const key = snapshot.key;
-      const card = document.getElementById(`order-${key}`);
-      if (card) card.remove();
-    });
-  </script>
+</script>
 </body>
 </html>
