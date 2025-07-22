@@ -173,12 +173,15 @@ function formatItems(items) {
   }).join('\n');
 }
 
+// CHANGED splitItems function — now use each item's own 'type' property to split
 function splitItems(items) {
   const food = [], bar = [];
   items.forEach(item => {
-    const data = menuItemsByName[item.name];
-    if (data && barCategories.has(data.category)) bar.push(item);
-    else food.push(item);
+    if (item.type === 'bar') {
+      bar.push(item);
+    } else {
+      food.push(item);
+    }
   });
   return { food, bar };
 }
