@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Kitchen Dashboard – Wooden Garden</title>
+  <title>Kitchen Dashboard –kholmay </title>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -115,7 +115,7 @@
   </style>
 </head>
 <body>
-  <h1>👨‍🍳 Kitchen Dashboard</h1>
+  <h1>👨‍🍳 Kitchen Dashboard- Cafe Kholmay</h1>
   <button id="logout">Logout</button>
   <div id="orders"></div>
   <div id="history"></div>
@@ -123,82 +123,83 @@
     <div id="btnOrders" class="nav-button active" title="Orders">🧾 Orders</div>
     <div id="btnHistory" class="nav-button" title="History">📜 History</div>
   </div>
+
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-  import {
-    getDatabase,
-    ref,
-    onChildAdded,
-    onChildRemoved,
-    onChildChanged,
-    set,
-    remove,
-    update
-  } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
-  import {
-    getAuth,
-    onAuthStateChanged,
-    signOut
-  } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      onChildAdded,
+      onChildRemoved,
+      onChildChanged,
+      set,
+      remove,
+      update
+    } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-  // ✅ KHOLME PROJECT CONFIG
-  const firebaseConfig = {
-    apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
-    authDomain: "kholme-menu1.firebaseapp.com",
-    databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
-    projectId: "kholme-menu1",
-    storageBucket: "kholme-menu1.firebasestorage.app",
-    messagingSenderId: "434798935284",
-    appId: "1:434798935284:web:527ae90b4d4833a30ff2a1",
-    measurementId: "G-9XG8BZ9YXK"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
+      authDomain: "kholme-menu1.firebaseapp.com",
+      databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
+      projectId: "kholme-menu1",
+      storageBucket: "kholme-menu1.firebasestorage.app",
+      messagingSenderId: "434798935284",
+      appId: "1:434798935284:web:527ae90b4d4833a30ff2a1",
+      measurementId: "G-9XG8BZ9YXK"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const auth = getAuth();
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth();
 
-  const ordersRef = ref(db, 'orders');
-  const completedRef = ref(db, 'completedOrders');
+    const ordersRef = ref(db, 'orders');
+    const completedRef = ref(db, 'completedOrders');
 
-  const ordersDiv = document.getElementById('orders');
-  const historyDiv = document.getElementById('history');
-  const logoutBtn = document.getElementById('logout');
+    const ordersDiv = document.getElementById('orders');
+    const historyDiv = document.getElementById('history');
+    const logoutBtn = document.getElementById('logout');
+    const orderBell = document.getElementById('orderBell');
 
-  logoutBtn.addEventListener('click', () => {
-    signOut(auth).then(() => {
-      window.location.href = 'kitchen-login.html';
+    logoutBtn.addEventListener('click', () => {
+      signOut(auth).then(() => {
+        window.location.href = 'kitchen-login.html';
+      });
     });
-  });
 
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = "kitchen-login.html";
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "kitchen-login.html";
+      }
+    });
+
+    function formatItems(items) {
+      return items.map(i => {
+        const qty = i.quantity || 1;
+        const pricePer = i.price || 0;
+        const total = qty * pricePer;
+        return `${i.name || "Unnamed"} / Qty: ${qty} / Rs.${pricePer} each / Total: Rs.${total}`;
+      }).join('\n');
     }
-  });
 
-  function formatItems(items) {
-    return items.map(i => {
-      const qty = i.quantity || 1;
-      const pricePer = i.price || 0;
-      const total = qty * pricePer;
-      return `${i.name || "Unnamed"} / Qty: ${qty} / Rs.${pricePer} each / Total: Rs.${total}`;
-    }).join('\n');
-  }
+    function createOrderCard(order, key, showStatusButtons = true) {
+      let orderName = order.name || (order.items && order.items.length > 0 && order.items[0].name) || "Unnamed Item";
 
-  function createOrderCard(order, key, showStatusButtons = true) {
-    let orderName = order.name || (order.items && order.items.length > 0 && order.items[0].name) || "Unnamed Item";
-
-    let priceDisplay = '';
-    if (order.status === 'cancelled') {
-      priceDisplay = `<strong style="color:red;">❌ Cancelled:</strong> ${order.note || ''}`;
-    } else if (order.price) {
-      priceDisplay = `Price: Rs. ${order.price}`;
-    } else if (order.items && order.items.length > 0) {
-      const totalPrice = order.items.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0);
-      priceDisplay = `Total Price: Rs. ${totalPrice}\nDetails:\n${formatItems(order.items)}`;
-    } else {
-      priceDisplay = "Price: N/A";
-    }
+      let priceDisplay = '';
+      if (order.status === 'cancelled') {
+        priceDisplay = `<strong style="color:red;">❌ Cancelled:</strong> ${order.note || ''}`;
+      } else if (order.price) {
+        priceDisplay = `Price: Rs. ${order.price}`;
+      } else if (order.items && order.items.length > 0) {
+        const totalPrice = order.items.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0);
+        priceDisplay = `Total Price: Rs. ${totalPrice}\nDetails:\n${formatItems(order.items)}`;
+      } else {
+        priceDisplay = "Price: N/A";
+      }
 
       const time = new Date(order.timestamp).toLocaleTimeString();
       const tableNumber = order.table || order.tableNumber || 'N/A';
@@ -221,7 +222,6 @@
           </div>` : ''}
       `;
 
-      // Set border color & header label based on status
       switch (order.status) {
         case 'pending':
           div.style.borderLeft = '5px solid #ffcc80';
@@ -293,6 +293,16 @@
       const order = snapshot.val();
       const key = snapshot.key;
       ordersMap[key] = order;
+
+      // 🔔 Play bell for new orders
+      if (!order.notified) {
+        orderBell.play().catch((err) => {
+          console.warn('Bell sound blocked until user interacts:', err);
+        });
+
+        update(ref(db, `orders/${key}`), { notified: true });
+      }
+
       if (currentView === 'orders') {
         const card = createOrderCard(order, key, true);
         ordersDiv.appendChild(card);
@@ -394,5 +404,8 @@
       sortOrderCards(historyDiv);
     }
   </script>
+
+  <!-- 🔔 Audio for bell -->
+  <audio id="orderBell" src="https://dravo08.github.io/Dravo-kholme/bell.mp3" preload="auto"></audio>
 </body>
 </html>
