@@ -18,7 +18,6 @@
       text-align: center;
       margin-bottom: 10px;
     }
-
     #container {
       flex: 1;
       display: flex;
@@ -36,7 +35,6 @@
       padding: 4px 0;
       background: #f5f5f5;
     }
-
     .order-card {
       background: white;
       border-radius: 8px;
@@ -61,7 +59,6 @@
     .processing { background: #81d4fa; }
     .completed { background: #aed581; }
     .cancel { background: #ef9a9a; }
-
     #logout {
       position: fixed;
       top: 15px;
@@ -108,15 +105,12 @@
 <body>
   <h1>🍽️ Kitchen Dashboard</h1>
   <button id="logout">Logout</button>
-
   <div id="container">
     <div id="foodSection"></div>
     <div id="separator">— Bar Orders —</div>
     <div id="barSection"></div>
   </div>
-
   <audio id="orderBell" src="https://dravo08.github.io/Dravo-kholme/bell.mp3" preload="auto"></audio>
-
   <div class="bottom-nav">
     <div id="btnOrders" class="nav-button active" title="Orders">🍴 Orders</div>
     <div id="btnHistory" class="nav-button" title="History">📜 History</div>
@@ -127,31 +121,20 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebas
 import { getDatabase, ref, onChildAdded, onChildRemoved, set, remove, update } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-// Your bar categories
 const barCategories = new Set([
-  "Hot Beverages",
-  "Cold Beverage",
-  "Iced Coffee Alternatives",
-  "Blended Beverage",
-  "Icecream",
-  "V60",
-  "Soft Drinks",
-  "Lassi",
-  "Hot Drinks Alternatives"
+  "Hot Beverages", "Cold Beverage", "Iced Coffee Alternatives", "Blended Beverage",
+  "Icecream", "V60", "Soft Drinks", "Lassi", "Hot Drinks Alternatives"
 ]);
 
-// Your full menu JSON data (only partial included here for example)
 const menuJSON = {
   "item1000": { "category": "Hot Beverages", "name": "Espresso", "price": 120 },
   "item1001": { "category": "Hot Beverages", "name": "Doppio", "price": 140 },
   "item1002": { "category": "Hot Beverages", "name": "Americano (single/double)", "price": 160 },
   "item1003": { "category": "Hot Beverages", "name": "Cappuccino", "price": 230 },
   "item1004": { "category": "Hot Beverages", "name": "Cafe Latte", "price": 250 },
-  // ... add all your menu items here exactly as in your JSON
   "item1095": { "category": "Hookah", "name": "Cloude hooka Flavour (Customers choice)", "price": 500 }
 };
 
-// Build a lookup by name
 const menuItemsByName = {};
 for (const key in menuJSON) {
   const item = menuJSON[key];
@@ -183,9 +166,6 @@ const btnHistory = document.getElementById('btnHistory');
 logoutBtn.onclick = () => signOut(auth).then(() => location.href = 'kitchen-login.html');
 onAuthStateChanged(auth, user => { if (!user) location.href = 'kitchen-login.html'; });
 
-const ordersMap = {};
-let currentView = 'orders';
-
 function formatItems(items) {
   return items.map(i => {
     const q = i.quantity||1, p = i.price||0;
@@ -193,91 +173,90 @@ function formatItems(items) {
   }).join('\n');
 }
 
-// Updated isBarOnly: uses menuItemsByName to check category
-function isBarOnly(order){
-  if(!Array.isArray(order.items)) return false;
-  return order.items.every(item => {
-    const menuItem = menuItemsByName[item.name];
-    return menuItem && barCategories.has(menuItem.category);
+function splitItems(items) {
+  const food = [], bar = [];
+  items.forEach(item => {
+    const data = menuItemsByName[item.name];
+    if (data && barCategories.has(data.category)) bar.push(item);
+    else food.push(item);
   });
+  return { food, bar };
 }
 
-function attachCard(container, key, order, showBtns){
-  if(!Array.isArray(order.items)) return;
-  let priceStr = order.status==='cancelled'
-    ? `<strong style="color:red;">❌ Cancelled:</strong> ${order.note||''}`
-    : order.price
-      ? `Price: Rs. ${order.price}`
-      : `Total Price: Rs. ${order.items.reduce((s,i)=>s+(i.price||0)*(i.quantity||1),0)}<br>Details:<br>${formatItems(order.items).replace(/\n/g,'<br>')}`;
+function attachCard(container, key, order, itemsSubset, suffix = '') {
+  const id = `${key}${suffix}`;
+  if (document.getElementById(id)) return;
 
+  let total = itemsSubset.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
   const time = new Date(order.timestamp).toLocaleTimeString();
-  const table = order.table||order.tableNumber||'N/A';
+  const table = order.table || order.tableNumber || 'N/A';
 
   const div = document.createElement('div');
-  div.className='order-card';
-  div.id=key;
+  div.className = 'order-card';
+  div.id = id;
   div.innerHTML = `
-    <div class="order-header">${order.name||order.items[0].name||'Unnamed'} – Table ${table}</div>
-    <div class="order-info">${priceStr}</div>
+    <div class="order-header">${order.name || itemsSubset[0].name || 'Unnamed'} – Table ${table}</div>
+    <div class="order-info">Total: Rs. ${total}<br>Details:<br>${formatItems(itemsSubset).replace(/\n/g, '<br>')}</div>
     <div class="order-info">🕒 ${time}</div>
-    <div class="order-info">📝 Notes: ${order.note||order.description||'None'}</div>
+    <div class="order-info">📝 Notes: ${order.note || order.description || 'None'}</div>
     <div class="status-buttons">
       <button class="pending">Pending</button>
       <button class="processing">Processing</button>
       <button class="completed">Completed</button>
       <button class="cancel">Cancel</button>
     </div>`;
-  const [b0,b1,b2,b3] = div.querySelectorAll('button');
-  b0.onclick=()=>update(ref(db,`orders/${key}`),{status:'pending'});
-  b1.onclick=()=>update(ref(db,`orders/${key}`),{status:'processing'});
-  b2.onclick=async()=>{
-    const finalSt = order.status==='cancelled'?'cancelled':'completed';
-    const finalNote=order.status==='cancelled'?order.note||'Sorry we don’t have it now':'';
-    await set(ref(db,`completedOrders/${key}`),{...order,status:finalSt,note:finalNote});
-    await remove(ref(db,`orders/${key}`));
+  const [b0, b1, b2, b3] = div.querySelectorAll('button');
+  b0.onclick = () => update(ref(db, `orders/${key}`), { status: 'pending' });
+  b1.onclick = () => update(ref(db, `orders/${key}`), { status: 'processing' });
+  b2.onclick = async () => {
+    const finalSt = order.status === 'cancelled' ? 'cancelled' : 'completed';
+    const finalNote = order.status === 'cancelled' ? (order.note || 'Sorry we don’t have it now') : '';
+    await set(ref(db, `completedOrders/${key}`), { ...order, status: finalSt, note: finalNote });
+    await remove(ref(db, `orders/${key}`));
   };
-  b3.onclick=()=>update(ref(db,`orders/${key}`),{status:'cancelled',note:'Sorry we don’t have it now'});
+  b3.onclick = () => update(ref(db, `orders/${key}`), { status: 'cancelled', note: 'Sorry we don’t have it now' });
+
   div.style.borderLeft = `5px solid ${
-    order.status==='pending'?'#ffcc80':
-    order.status==='processing'?'#81d4fa':
-    order.status==='completed'?'#aed581':
-    order.status==='cancelled'?'#ef5350':'#8bc34a'}`;
+    order.status === 'pending' ? '#ffcc80' :
+    order.status === 'processing' ? '#81d4fa' :
+    order.status === 'completed' ? '#aed581' :
+    order.status === 'cancelled' ? '#ef5350' : '#8bc34a'
+  }`;
   container.appendChild(div);
 }
 
-onChildAdded(ordersRef, snapshot=>{
-  const k=snapshot.key,o=snapshot.val();
-  ordersMap[k]=o;
-  const allBar=isBarOnly(o);
-  if(currentView==='orders'){
-    if(allBar) attachCard(barSection,k,o,true);
-    else attachCard(foodSection,k,o,true);
-  }
-  if(!o.notified){
-    orderBell.play().catch(()=>{});
-    update(ref(db,`orders/${k}`),{notified:true});
+onChildAdded(ordersRef, snapshot => {
+  const key = snapshot.key, order = snapshot.val();
+  if (!Array.isArray(order.items)) return;
+
+  const { food, bar } = splitItems(order.items);
+  if (food.length) attachCard(foodSection, key, order, food, '_food');
+  if (bar.length) attachCard(barSection, key, order, bar, '_bar');
+
+  if (!order.notified) {
+    orderBell.play().catch(() => {});
+    update(ref(db, `orders/${key}`), { notified: true });
   }
 });
 
-onChildRemoved(ordersRef,snap=>{
-  const card=document.getElementById(snap.key);
-  if(card) card.remove();
+onChildRemoved(ordersRef, snap => {
+  const k = snap.key;
+  const foodEl = document.getElementById(`${k}_food`);
+  const barEl = document.getElementById(`${k}_bar`);
+  if (foodEl) foodEl.remove();
+  if (barEl) barEl.remove();
 });
 
-btnOrders.onclick=()=>{
-  currentView='orders';
+btnOrders.onclick = () => {
   btnOrders.classList.add('active');
   btnHistory.classList.remove('active');
-  foodSection.parentElement.style.display='flex';
+  foodSection.parentElement.style.display = 'flex';
 };
-
-btnHistory.onclick=()=>{
-  currentView='history';
-  btnHistory.classList.add('active');
+btnHistory.onclick = () => {
   btnOrders.classList.remove('active');
-  foodSection.parentElement.style.display='none';
+  btnHistory.classList.add('active');
+  foodSection.parentElement.style.display = 'none';
 };
-
 </script>
 </body>
 </html>
