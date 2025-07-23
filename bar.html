@@ -162,36 +162,47 @@ function formatItems(items) {
   }).join('\n');
 }
 
-// Check if order is bar order (all items type "bar")
+// Filter items by type for current dashboard ('bar')
+function filterItemsByType(items, type) {
+  return items.filter(item => {
+    for (const key in menuData) {
+      const menuItem = menuData[key];
+      if (menuItem.name === item.name) {
+        return menuItem.type === type;
+      }
+    }
+    return false;
+  });
+}
+
+// Check if order contains at least one bar item
 function isBarOrder(order) {
   if (!Array.isArray(order.items)) return false;
-  return order.items.every(item => {
+  return order.items.some(item => {
     for (const key in menuData) {
       const menuItem = menuData[key];
       if (menuItem.name === item.name) {
         return menuItem.type === 'bar';
       }
     }
-    return false; // item not found in menuData
+    return false;
   });
 }
 
-// Create an order card element (for both orders and completed orders)
-function createOrderCard(key, order, isCompleted = false) {
-  if (!Array.isArray(order.items)) return null;
+// Create an order card element (accepts filtered items)
+function createOrderCard(key, order, filteredItems, isCompleted = false) {
+  if (!Array.isArray(filteredItems) || filteredItems.length === 0) return null;
 
-  const priceTotal = order.items.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0);
+  const priceTotal = filteredItems.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0);
 
   const div = document.createElement('div');
   div.className = 'order-card';
   div.id = key;
 
-  // Use fallback for table number and note
   const tableNum = order.table || order.tableNumber || 'N/A';
   const noteText = order.note || order.description || 'None';
 
-  // Border color based on status
-  let borderColor = '#8bc34a'; // default green
+  let borderColor = '#8bc34a';
   switch ((order.status || '').toLowerCase()) {
     case 'pending': borderColor = '#ffcc80'; break;
     case 'processing': borderColor = '#81d4fa'; break;
@@ -201,10 +212,9 @@ function createOrderCard(key, order, isCompleted = false) {
   div.style.borderLeftColor = borderColor;
 
   if (!isCompleted) {
-    // Active orders show buttons
     div.innerHTML = `
-      <div class="order-header">${order.name || order.items[0].name || 'Unnamed'} – Table ${tableNum}</div>
-      <div class="order-info">Total Price: Rs. ${priceTotal}<br>Details:<br>${formatItems(order.items).replace(/\n/g, '<br>')}</div>
+      <div class="order-header">${order.name || filteredItems[0].name || 'Unnamed'} – Table ${tableNum}</div>
+      <div class="order-info">Total Price: Rs. ${priceTotal}<br>Details:<br>${formatItems(filteredItems).replace(/\n/g, '<br>')}</div>
       <div class="order-info">🕒 ${new Date(order.timestamp).toLocaleTimeString()}</div>
       <div class="order-info">📝 Notes: ${noteText}</div>
       <div class="status-buttons">
@@ -222,7 +232,6 @@ function createOrderCard(key, order, isCompleted = false) {
     btnCompleted.onclick = async () => {
       const finalStatus = order.status === 'cancelled' ? 'cancelled' : 'completed';
       const finalNote = order.status === 'cancelled' ? (order.note || 'Sorry we don’t have it now') : (order.note || order.description || '');
-      // Copy table info explicitly to completedOrders
       const completedOrderData = {
         ...order,
         status: finalStatus,
@@ -235,10 +244,9 @@ function createOrderCard(key, order, isCompleted = false) {
     };
     btnCancel.onclick = () => update(ref(db, `orders/${key}`), { status: 'cancelled', note: 'Sorry we don’t have it now' });
   } else {
-    // Completed orders show info only
     div.innerHTML = `
       <div class="order-header">Table ${tableNum}</div>
-      <div class="order-info">${formatItems(order.items).replace(/\n/g, '<br>')}</div>
+      <div class="order-info">${formatItems(filteredItems).replace(/\n/g, '<br>')}</div>
       <div class="order-info">Status: ${order.status || 'Completed'}</div>
       <div class="order-info">Time: ${new Date(order.timestamp).toLocaleTimeString()}</div>
       <div class="order-info">Note: ${noteText}</div>
@@ -251,6 +259,7 @@ function createOrderCard(key, order, isCompleted = false) {
 // Render active bar orders
 function renderOrders() {
   container.innerHTML = '';
+
   const ordersArray = Object.entries(ordersMap)
     .filter(([key, order]) => isBarOrder(order));
 
@@ -260,7 +269,10 @@ function renderOrders() {
   }
 
   ordersArray.forEach(([key, order]) => {
-    const card = createOrderCard(key, order, false);
+    const filteredItems = filterItemsByType(order.items, 'bar');
+    if (filteredItems.length === 0) return; // skip if no bar items
+
+    const card = createOrderCard(key, order, filteredItems, false);
     if (card) container.appendChild(card);
   });
 }
@@ -275,24 +287,15 @@ function renderHistory() {
 
     snapshot.forEach(childSnapshot => {
       const order = childSnapshot.val();
-
       if (!Array.isArray(order.items)) return;
 
-      // Check if all items are bar type
-      const isBar = order.items.every(item => {
-        for (const key in menuData) {
-          const menuItem = menuData[key];
-          if (menuItem.name === item.name) {
-            return menuItem.type === 'bar';
-          }
-        }
-        return false;
-      });
-      if (!isBar) return;
+      // Filter bar items
+      const filteredItems = filterItemsByType(order.items, 'bar');
+      if (filteredItems.length === 0) return;
 
       count++;
 
-      const card = createOrderCard(childSnapshot.key, order, true);
+      const card = createOrderCard(childSnapshot.key, order, filteredItems, true);
       if (card) container.appendChild(card);
     });
 
