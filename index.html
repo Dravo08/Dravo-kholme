@@ -463,12 +463,13 @@ searchBar.addEventListener('input', () => {
         if (checkbox.checked) {  
           qtyInput.disabled = false;  
           if (Number(qtyInput.value) === 0) qtyInput.value = 1;  
-          orderSelections[id] = {  
-            selected: true,  
-            quantity: Number(qtyInput.value),  
-            price: Number(item.price),  
-            name: item.name,  
-          };  
+          orderSelections[id] = {
+  selected: true,
+  quantity: val,
+  price: Number(item.price),
+  name: item.name,
+  type: item.type || 'food'  // default to food if missing
+};
         } else {  
           qtyInput.disabled = true;  
           qtyInput.value = 0;  
@@ -678,11 +679,13 @@ searchBar.addEventListener('input', () => {
       const newOrder = {  
         customerId,  
         tableNumber: Number(tableNumber),  
-        items: selectedItems.map(({ name, quantity, price }) => ({  
-          name,  
-          quantity,  
-          price,  
-        })),  
+        items: selectedItems.map(({ name, quantity, price, type }) => ({
+  name,
+  quantity,
+  price,
+  type,
+})),
+type: selectedItems[0].type || 'food',
         description: description,  
         status: 'pending',  
         timestamp: Date.now(),  
