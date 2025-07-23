@@ -113,9 +113,20 @@
   </style>  
 </head>  
 <body>  
-  <h1>👨‍🍳 Kitchen Dashboard</h1>  
   <button id="logout">Logout</button>  
-  <div id="orders"></div>  
+<div id="orders">
+  <h2 style="text-align:center; color:#5d4037;">👨‍🍳 Kitchen Dashboard</h2>
+  <div id="ordersFood"></div>
+  <h2 style="text-align:center; color:#5d4037; margin-top: 40px;">🍻 BAR Dashboard</h2>
+  <div id="ordersBar"></div>
+</div>
+
+<div id="history">
+  <h2 style="text-align:center; color:#5d4037;">👨‍🍳 Kitchen History</h2>
+  <div id="historyFood"></div>
+  <h2 style="text-align:center; color:#5d4037; margin-top: 40px;">🍻 BAR History</h2>
+  <div id="historyBar"></div>
+</div>
   <div id="history"></div>  
   <div class="bottom-nav">  
     <div id="btnOrders" class="nav-button active" title="Orders">🧾 Orders</div>  
@@ -395,23 +406,41 @@ document.body.addEventListener('touchstart', enableAudio, { once: true });
       renderHistory();  
     });  
   
-    function renderOrders() {  
-      ordersDiv.innerHTML = '';  
-      for (const key in ordersMap) {  
-        const card = createOrderCard(ordersMap[key], key, true);  
-        ordersDiv.appendChild(card);  
-      }  
-      sortOrderCards(ordersDiv);  
-    }  
+    function renderOrders() {
+  document.getElementById('ordersFood').innerHTML = '';
+  document.getElementById('ordersBar').innerHTML = '';
+
+  for (const key in ordersMap) {
+    const order = ordersMap[key];
+    const card = createOrderCard(order, key, true);
+    if (order.type === 'bar') {
+      document.getElementById('ordersBar').appendChild(card);
+    } else {
+      document.getElementById('ordersFood').appendChild(card);
+    }
+  }
+
+  sortOrderCards(document.getElementById('ordersFood'));
+  sortOrderCards(document.getElementById('ordersBar'));
+}
   
-    function renderHistory() {  
-      historyDiv.innerHTML = '';  
-      for (const key in completedMap) {  
-        const card = createOrderCard(completedMap[key], key, false);  
-        historyDiv.appendChild(card);  
-      }  
-      sortOrderCards(historyDiv);  
-    }  
+    function renderHistory() {
+  document.getElementById('historyFood').innerHTML = '';
+  document.getElementById('historyBar').innerHTML = '';
+
+  for (const key in completedMap) {
+    const order = completedMap[key];
+    const card = createOrderCard(order, key, false);
+    if (order.type === 'bar') {
+      document.getElementById('historyBar').appendChild(card);
+    } else {
+      document.getElementById('historyFood').appendChild(card);
+    }
+  }
+
+  sortOrderCards(document.getElementById('historyFood'));
+  sortOrderCards(document.getElementById('historyBar'));
+}
   </script>    <!-- 🔔 Audio for bell -->  <audio id="orderBell" src="https://dravo08.github.io/Dravo-kholme/bell.mp3" preload="auto"></audio>
 
 </body>  
