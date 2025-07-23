@@ -204,12 +204,26 @@ onChildAdded(ordersRef, snapshot => {
 
   if (!Array.isArray(order.items)) return;
 
-  // Check order.type to decide section
-  if(order.type === 'bar'){
+  // Determine type based on first item's type field
+  const itemType = order.items[0]?.type?.toLowerCase();
+
+  if (itemType === 'bar') {
     attachCard(barSection, key, order);
   } else {
     attachCard(foodSection, key, order);
   }
+
+  if (!order.notified) {
+    orderBell.play().catch(() => {});
+    update(ref(db, `orders/${key}`), { notified: true });
+  }
+});
+
+  if (!order.notified) {
+    orderBell.play().catch(() => {});
+    update(ref(db, `orders/${key}`), { notified: true });
+  }
+});
 
   if (!order.notified) {
     orderBell.play().catch(() => {});
