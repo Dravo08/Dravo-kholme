@@ -97,6 +97,24 @@
     flex: 1;
     display: none;
   }
+  /* New finalize all button styles */
+  #finalizeAllBtn {
+    position: fixed;
+    bottom: 60px;
+    right: 20px;
+    background: #e53935;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    line-height: 44px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(229, 57, 53, 0.7);
+    z-index: 1000;
+  }
 </style>
 </head>
 <body>
@@ -113,9 +131,12 @@
   <div id="btnHistory" class="nav-button" title="History">📜 History</div>
 </div>
 
+<!-- Finalize All Orders Button -->
+<button id="finalizeAllBtn" title="Finalize All Orders">🚨</button>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-import { getDatabase, ref, onChildAdded, onChildRemoved, update, remove, onValue, set } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+import { getDatabase, ref, onChildAdded, onChildRemoved, update, remove, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -141,6 +162,7 @@ const logoutBtn = document.getElementById('logout');
 const orderBell = document.getElementById('orderBell');
 const btnOrders = document.getElementById('btnOrders');
 const btnHistory = document.getElementById('btnHistory');
+const finalizeAllBtn = document.getElementById('finalizeAllBtn');
 
 logoutBtn.onclick = () => signOut(auth).then(() => location.href = 'bar-login.html');
 onAuthStateChanged(auth, user => { if (!user) location.href = 'bar-login.html'; });
@@ -217,6 +239,8 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
   div.style.borderLeftColor = borderColor;
 
   if (!isCompleted) {
+    // Show status button colors normally for editing
+
     div.innerHTML = `
       <div class="order-header">${order.name || filteredItems[0].name || 'Unnamed'} – Table ${tableNum}</div>
       <div class="order-info">Total Price: Rs. ${priceTotal}<br>Details:<br>${formatItems(filteredItems).replace(/\n/g, '<br>')}</div>
@@ -236,34 +260,47 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
     btnProcessing.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), bar: 'processing' } });
 
     btnCompleted.onclick = async () => {
-      // Update only bar status to completed
       const newStatus = { ...(order.status || {}), bar: 'completed' };
-
-      // Update order status.bar to completed in DB
       await update(ref(db, `orders/${key}`), { status: newStatus });
-
-      // Update local copy to hide bar part immediately
       ordersMap[key].status = newStatus;
-
-      // Check if kitchen is also completed or cancelled
       const kitchenStatus = newStatus.kitchen || '';
       if (kitchenStatus === 'completed' || kitchenStatus === 'cancelled') {
-        // Move entire order to completedOrders
         await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, timestamp: Date.now() });
         await remove(ref(db, `orders/${key}`));
         delete ordersMap[key];
       } else {
-        // Just re-render orders, bar part hidden from bar dashboard
         renderOrders();
       }
     };
 
     btnCancel.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), bar: 'cancelled' }, note: 'Sorry we don’t have it now' });
   } else {
+    // For completed orders show status label with fix: cancelled or completed only
+
+
+    // New fix: check .bar first, fallback to root status string
+let barStatusRaw = 'pending';
+if (order.status) {
+  if (typeof order.status.bar === 'string') {
+    barStatusRaw = order.status.bar.toLowerCase();
+  } else if (typeof order.status === 'string') {
+    barStatusRaw = order.status.toLowerCase();
+  }
+}
+
+let statusText, statusClass;
+
+if (barStatusRaw === 'cancelled') {
+  statusText = 'Cancelled';
+  statusClass = 'cancel';
+} else {
+  statusText = 'Completed';
+  statusClass = 'completed';
+}
     div.innerHTML = `
       <div class="order-header">Table ${tableNum}</div>
       <div class="order-info">${formatItems(filteredItems).replace(/\n/g, '<br>')}</div>
-      <div class="order-info">Status: ${order.status?.bar || 'Completed'}</div>
+      <div class="order-info status-label ${statusClass}">Status: ${statusText}</div>
       <div class="order-info">Time: ${new Date(order.timestamp).toLocaleTimeString()}</div>
       <div class="order-info">Note: ${noteText}</div>
     `;
@@ -355,8 +392,31 @@ btnHistory.onclick = () => {
   renderHistory();
 };
 
+// Finalize all orders button handler
+finalizeAllBtn.onclick = async () => {
+  if (!confirm('🚨 Are you sure you want to finalize ALL orders?')) return;
+
+  try {
+    const snapshot = await get(ordersRef);
+    const allOrders = snapshot.val();
+    if (!allOrders) return alert('No orders to finalize.');
+
+    const updates = {};
+    for (const [id, order] of Object.entries(allOrders)) {
+      // Preserve existing status (completed or cancelled or whatever)
+      updates[`completedOrders/${id}`] = order;
+      updates[`orders/${id}`] = null;
+    }
+
+    await update(ref(db), updates);
+    alert('✅ All orders moved to completedOrders.');
+  } catch (e) {
+    alert('❌ Failed to finalize: ' + e.message);
+  }
+};
+
 // Initial render
 renderOrders();
 </script>
 </body>
-  </html>
+    </html>
