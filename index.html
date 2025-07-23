@@ -463,7 +463,8 @@ searchBar.addEventListener('input', () => {
         if (checkbox.checked) {  
           qtyInput.disabled = false;  
           if (Number(qtyInput.value) === 0) qtyInput.value = 1;  
-          orderSelections[id] = {
+          const val = Number(qtyInput.value) || 1; // get quantity or default to 1
+orderSelections[id] = {
   selected: true,
   quantity: val,
   price: Number(item.price),
@@ -685,7 +686,7 @@ searchBar.addEventListener('input', () => {
   price,
   type,
 })),
-type: selectedItems[].type || 'food',
+type: selectedItems[0].type || 'food',
         description: description,  
         status: 'pending',  
         timestamp: Date.now(),  
@@ -704,7 +705,7 @@ type: selectedItems[].type || 'food',
           updateOrderSummary();  
   
           // Uncheck checkboxes and reset quantities in UI  
-          document.querySelectorAll('.menu-item input[type="checkbox"]').forEach((cb) => (cb.checked = false));  
+                    document.querySelectorAll('.menu-item input[type="checkbox"]').forEach((cb) => (cb.checked = false));  
           document.querySelectorAll('.menu-item input[type="number"]').forEach((input) => {  
             input.value = 0;  
             input.disabled = true;  
