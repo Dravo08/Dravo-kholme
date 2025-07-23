@@ -193,6 +193,11 @@ function isKitchenOrder(order) {
 function createOrderCard(key, order, filteredItems, isCompleted = false) {
   if (!Array.isArray(filteredItems) || filteredItems.length === 0) return null;
 
+  // If kitchen status is completed or cancelled, hide from kitchen orders view (unless in history view)
+  if (!isCompleted && order.status?.kitchen && ['completed','cancelled'].includes(order.status.kitchen)) {
+    return null;
+  }
+
   const priceTotal = filteredItems.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0);
 
   const div = document.createElement('div');
@@ -203,7 +208,9 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
   const noteText = order.note || order.description || 'None';
 
   let borderColor = '#8bc34a';
-  switch ((order.status || '').toLowerCase()) {
+  // Use kitchen part status or overall status for border color
+  let statusForColor = (order.status && order.status.kitchen) ? order.status.kitchen : (typeof order.status === 'string' ? order.status : '');
+  switch (statusForColor.toLowerCase()) {
     case 'pending': borderColor = '#ffcc80'; break;
     case 'processing': borderColor = '#81d4fa'; break;
     case 'completed': borderColor = '#aed581'; break;
@@ -227,27 +234,51 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
 
     const [btnPending, btnProcessing, btnCompleted, btnCancel] = div.querySelectorAll('button');
 
-    btnPending.onclick = () => update(ref(db, `orders/${key}`), { status: 'pending' });
-    btnProcessing.onclick = () => update(ref(db, `orders/${key}`), { status: 'processing' });
+    btnPending.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), kitchen: 'pending' } });
+    btnProcessing.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), kitchen: 'processing' } });
+
     btnCompleted.onclick = async () => {
-      const finalStatus = order.status === 'cancelled' ? 'cancelled' : 'completed';
-      const finalNote = order.status === 'cancelled' ? (order.note || 'Sorry we don’t have it now') : '';
-      const completedOrderData = {
-        ...order,
-        status: finalStatus,
-        note: finalNote,
-        table: tableNum,
-      };
-      await update(ref(db, `orders/${key}`), { status: finalStatus });
-      await set(ref(db, `completedOrders/${key}`), completedOrderData);
-      await remove(ref(db, `orders/${key}`));
+      // Update kitchen status to completed
+      const newStatus = { ...(order.status || {}), kitchen: 'completed' };
+
+      await update(ref(db, `orders/${key}`), { status: newStatus });
+
+      // Update local map so UI reflects immediately
+      ordersMap[key].status = newStatus;
+
+      // Check if bar is also completed or cancelled
+      const barStatus = newStatus.bar || '';
+      if (barStatus === 'completed' || barStatus === 'cancelled') {
+        // Both completed/cancelled — move whole order to completedOrders and remove from orders
+        await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, timestamp: Date.now() });
+        await remove(ref(db, `orders/${key}`));
+        delete ordersMap[key];
+      } else {
+        // Otherwise just rerender so kitchen part hides
+        renderOrders();
+      }
     };
-    btnCancel.onclick = () => update(ref(db, `orders/${key}`), { status: 'cancelled', note: 'Sorry we don’t have it now' });
+
+    btnCancel.onclick = async () => {
+      const newStatus = { ...(order.status || {}), kitchen: 'cancelled' };
+      await update(ref(db, `orders/${key}`), { status: newStatus, note: 'Sorry we don’t have it now' });
+
+      ordersMap[key].status = newStatus;
+
+      const barStatus = newStatus.bar || '';
+      if (barStatus === 'completed' || barStatus === 'cancelled') {
+        await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, note: 'Sorry we don’t have it now', timestamp: Date.now() });
+        await remove(ref(db, `orders/${key}`));
+        delete ordersMap[key];
+      } else {
+        renderOrders();
+      }
+    };
   } else {
     div.innerHTML = `
       <div class="order-header">Table ${tableNum}</div>
       <div class="order-info">${formatItems(filteredItems).replace(/\n/g, '<br>')}</div>
-      <div class="order-info">Status: ${order.status || 'Completed'}</div>
+      <div class="order-info">Status: ${order.status?.kitchen || 'Completed'}</div>
       <div class="order-info">Time: ${order.timestamp ? new Date(order.timestamp).toLocaleTimeString() : 'Unknown'}</div>
       <div class="order-info">Note: ${noteText}</div>
     `;
@@ -256,10 +287,12 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
   return div;
 }
 
-// Render orders view (show only kitchen items)
+// Render active kitchen orders
 function renderOrders() {
   container.innerHTML = '';
-  const ordersArray = Object.entries(ordersMap).filter(([_, order]) => isKitchenOrder(order));
+
+  const ordersArray = Object.entries(ordersMap)
+    .filter(([key, order]) => isKitchenOrder(order));
 
   if (ordersArray.length === 0) {
     container.innerHTML = '<p>No kitchen orders yet.</p>';
@@ -268,14 +301,14 @@ function renderOrders() {
 
   ordersArray.forEach(([key, order]) => {
     const filteredItems = filterItemsByType(order.items, 'kitchen');
-    if (filteredItems.length === 0) return; // skip if no kitchen items
+    if (filteredItems.length === 0) return;
 
     const card = createOrderCard(key, order, filteredItems, false);
     if (card) container.appendChild(card);
   });
 }
 
-// Render history view (completed orders with kitchen items only)
+// Render completed kitchen orders history
 function renderHistory() {
   container.innerHTML = '<h3>Kitchen Order History</h3>';
 
@@ -301,7 +334,7 @@ function renderHistory() {
   }, { onlyOnce: true });
 }
 
-// Firebase realtime listeners
+// Listen for new orders added
 onChildAdded(ordersRef, snapshot => {
   ordersMap[snapshot.key] = snapshot.val();
 
@@ -316,6 +349,7 @@ onChildAdded(ordersRef, snapshot => {
   }
 });
 
+// Listen for orders removed
 onChildRemoved(ordersRef, snapshot => {
   delete ordersMap[snapshot.key];
   const elem = document.getElementById(snapshot.key);
