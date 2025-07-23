@@ -1,252 +1,418 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Kitchen Dashboard – Kholm</title>
-  <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 20px 0 56px;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    h1 {
-      color: #4e342e;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    #container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-    #foodSection, #barSection {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0 20px;
-    }
-    #separator {
-      text-align: center;
-      font-size: 14px;
-      color: #888;
-      padding: 4px 0;
-      background: #f5f5f5;
-    }
-    .order-card {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-      padding: 15px;
-      margin-bottom: 12px;
-      border-left: 5px solid #8bc34a;
-      transition: border-color 0.3s;
-    }
-    .order-header { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
-    .order-info { margin-bottom: 8px; color: #333; white-space: pre-line; }
-    .status-buttons button {
-      margin-right: 6px;
-      padding: 5px 10px;
-      font-size: 13px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    .pending { background: #ffcc80; }
-    .processing { background: #81d4fa; }
-    .completed { background: #aed581; }
-    .cancel { background: #ef9a9a; }
-    #logout {
-      position: fixed;
-      top: 15px;
-      right: 20px;
-      background: #5d4037;
-      color: #fff;
-      padding: 8px 14px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      z-index: 999;
-    }
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 48px;
-      background: #5d4037;
-      border-top: 1px solid #4a2e1a;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
-      z-index: 999;
-      font-size: 20px;
-      color: #ddd;
-    }
-    .nav-button {
-      flex-grow: 1;
-      text-align: center;
-      cursor: pointer;
-      padding: 6px 0;
-      transition: color 0.3s, border-top 0.3s;
-      font-weight: 600;
-    }
-    .nav-button.active {
-      color: #f0e6d2;
-      border-top: 3px solid #8bc34a;
-      font-weight: 700;
-    }
-  </style>
-</head>
-<body>
-  <h1>🍽️ Kitchen Dashboard</h1>
-  <button id="logout">Logout</button>
-  <div id="container">
-    <div id="foodSection"></div>
-    <div id="separator">— Bar Orders —</div>
-    <div id="barSection"></div>
-  </div>
-  <audio id="orderBell" src="https://dravo08.github.io/Dravo-kholme/bell.mp3" preload="auto"></audio>
-  <div class="bottom-nav">
-    <div id="btnOrders" class="nav-button active" title="Orders">🍴 Orders</div>
-    <div id="btnHistory" class="nav-button" title="History">📜 History</div>
-  </div>
+<!DOCTYPE html>  <html lang="en">  
+<head>  
+  <meta charset="UTF-8" />  
+  <title>Kitchen Dashboard –kholm</title>  
+  <style>  
+    body {  
+      font-family: "Segoe UI", sans-serif;  
+      background: #f5f5f5;  
+      margin: 0;  
+      padding: 20px 0 56px 0;  
+    }  
+    h1 {  
+      color: #4e342e;  
+      text-align: center;  
+      margin-bottom: 20px;  
+    }  #orders, #history {  
+  display: flex;  
+  flex-direction: column;  
+  gap: 12px;  
+  padding: 0 20px;  
+}  
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-import { getDatabase, ref, onChildAdded, onChildRemoved, set, remove, update } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+#history {  
+  display: none;  
+}  
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
-  authDomain: "kholme-menu1.firebaseapp.com",
-  databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
-  projectId: "kholme-menu1",
-  storageBucket: "kholme-menu1.appspot.com",
-  messagingSenderId: "434798935284",
-  appId: "1:434798935284:web:527ae90b4d4833a30ff2a1"
-};
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth();
+.order-card {  
+  background: white;  
+  border-radius: 8px;  
+  box-shadow: 0 1px 5px rgba(0,0,0,0.1);  
+  padding: 15px;  
+  border-left: 5px solid #8bc34a;  
+  transition: border-color 0.3s;  
+}  
 
-const ordersRef = ref(db, 'orders');
-const foodSection = document.getElementById('foodSection');
-const barSection = document.getElementById('barSection');
-const logoutBtn = document.getElementById('logout');
-const orderBell = document.getElementById('orderBell');
-const btnOrders = document.getElementById('btnOrders');
-const btnHistory = document.getElementById('btnHistory');
+.order-header {  
+  font-weight: bold;  
+  font-size: 16px;  
+  margin-bottom: 4px;  
+}  
 
-logoutBtn.onclick = () => signOut(auth).then(() => location.href = 'kitchen-login.html');
-onAuthStateChanged(auth, user => { if (!user) location.href = 'kitchen-login.html'; });
+.order-info {  
+  margin-bottom: 8px;  
+  color: #333;  
+  white-space: pre-line;  
+}  
 
-function formatItems(items) {
-  return items.map(i => {
-    const q = i.quantity || 1, p = i.price || 0;
-    return `${i.name} / Qty: ${q} / Rs.${p} each / Total: Rs.${q * p}`;
-  }).join('\n');
+.status-buttons button {  
+  margin-right: 6px;  
+  padding: 5px 10px;  
+  font-size: 13px;  
+  border: none;  
+  border-radius: 4px;  
+  cursor: pointer;  
+  transition: background-color 0.3s;  
+}  
+
+.pending { background: #ffcc80; }  
+.processing { background: #81d4fa; }  
+.completed { background: #aed581; }  
+.cancel { background: #ef9a9a; }  
+
+#logout {  
+  position: fixed;  
+  top: 15px;  
+  right: 20px;  
+  background: #5d4037;  
+  color: #fff;  
+  padding: 8px 14px;  
+  border: none;  
+  border-radius: 6px;  
+  cursor: pointer;  
+  z-index: 999;  
+}  
+
+.bottom-nav {  
+  position: fixed;  
+  bottom: 0;  
+  left: 0;  
+  width: 100%;  
+  height: 48px;  
+  background: #5d4037;  
+  border-top: 1px solid #4a2e1a;  
+  display: flex;  
+  justify-content: space-around;  
+  align-items: center;  
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.2);  
+  z-index: 999;  
+  font-size: 20px;  
+  color: #ddd;  
+  user-select: none;  
+}  
+
+.nav-button {  
+  flex-grow: 1;  
+  text-align: center;  
+  cursor: pointer;  
+  padding: 6px 0;  
+  transition: color 0.3s, border-top 0.3s;  
+  font-weight: 600;  
+}  
+
+.nav-button.active {  
+  color: #f0e6d2;  
+  border-top: 3px solid #8bc34a;  
+  font-weight: 700;  
+}  
+
+#history .status-buttons {  
+  display: none;  
 }
 
-function attachCard(container, key, order) {
-  if (document.getElementById(key)) return;
+  </style>  
+</head>  
+<body>  
+  <h1>👨‍🍳 Kitchen Dashboard</h1>  
+  <button id="logout">Logout</button>  
+  <div id="orders"></div>  
+  <div id="history"></div>  
+  <div class="bottom-nav">  
+    <div id="btnOrders" class="nav-button active" title="Orders">🧾 Orders</div>  
+    <div id="btnHistory" class="nav-button" title="History">📜 History</div>  
+  </div>    <script type="module">  
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";  
+    import {  
+      getDatabase,  
+      ref,  
+      onChildAdded,  
+      onChildRemoved,  
+      onChildChanged,  
+      set,  
+      remove,  
+      update  
+    } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";  
+    import {  
+      getAuth,  
+      onAuthStateChanged,  
+      signOut  
+    } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";  
+  
+    const firebaseConfig = {  
+      apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",  
+      authDomain: "kholme-menu1.firebaseapp.com",  
+      databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",  
+      projectId: "kholme-menu1",  
+      storageBucket: "kholme-menu1.firebasestorage.app",  
+      messagingSenderId: "434798935284",  
+      appId: "1:434798935284:web:527ae90b4d4833a30ff2a1",  
+      measurementId: "G-9XG8BZ9YXK"  
+    };  
+  
+    const app = initializeApp(firebaseConfig);  
+    const db = getDatabase(app);  
+    const auth = getAuth();  
+  
+    const ordersRef = ref(db, 'orders');  
+    const completedRef = ref(db, 'completedOrders');  
+  
+    const ordersDiv = document.getElementById('orders');  
+    const historyDiv = document.getElementById('history');  
+    const logoutBtn = document.getElementById('logout');  
+    const orderBell = document.getElementById('orderBell');  
+  
+    logoutBtn.addEventListener('click', () => {  
+      signOut(auth).then(() => {  
+        window.location.href = 'kitchen-login.html';  
+      });  
+    });  
+  
+    onAuthStateChanged(auth, (user) => {  
+      if (!user) {  
+        window.location.href = "kitchen-login.html";  
+      }  
+    });  
+  
+    function formatItems(items) {  
+      return items.map(i => {  
+        const qty = i.quantity || 1;  
+        const pricePer = i.price || 0;  
+        const total = qty * pricePer;  
+        return `${i.name || "Unnamed"} / Qty: ${qty} / Rs.${pricePer} each / Total: Rs.${total}`;  
+      }).join('\n');  
+    }  
+  
+    function createOrderCard(order, key, showStatusButtons = true) {  
+      let orderName = order.name || (order.items && order.items.length > 0 && order.items[0].name) || "Unnamed Item";  
+  
+      let priceDisplay = '';  
+      if (order.status === 'cancelled') {  
+        priceDisplay = `<strong style="color:red;">❌ Cancelled:</strong> ${order.note || ''}`;  
+      } else if (order.price) {  
+        priceDisplay = `Price: Rs. ${order.price}`;  
+      } else if (order.items && order.items.length > 0) {  
+        const totalPrice = order.items.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0);  
+        priceDisplay = `Total Price: Rs. ${totalPrice}\nDetails:\n${formatItems(order.items)}`;  
+      } else {  
+        priceDisplay = "Price: N/A";  
+      }  
+  
+      const time = new Date(order.timestamp).toLocaleTimeString();  
+      const tableNumber = order.table || order.tableNumber || 'N/A';  
+  
+      const div = document.createElement('div');  
+      div.className = 'order-card';  
+      div.id = key;  
+  
+      div.innerHTML = `  
+        <div class="order-header">${orderName} – Table ${tableNumber}</div>  
+        <div class="order-info">${priceDisplay.replace(/\n/g, '<br>')}</div>  
+        <div class="order-info">🕒 ${time}</div>  
+        <div class="order-info">📋 Notes: ${order.note || order.description || "None"}</div>  
+        ${showStatusButtons ? `  
+          <div class="status-buttons">  
+            <button class="pending">Pending</button>  
+            <button class="processing">Processing</button>  
+            <button class="completed">Completed</button>  
+            <button class="cancel">Cancel</button>  
+          </div>` : ''}  
+      `;  
+  
+      switch (order.status) {  
+        case 'pending':  
+          div.style.borderLeft = '5px solid #ffcc80';  
+          break;  
+        case 'processing':  
+          div.style.borderLeft = '5px solid #81d4fa';  
+          break;  
+        case 'completed':  
+          div.style.borderLeft = '5px solid #aed581';  
+          break;  
+        case 'cancelled':  
+          div.style.borderLeft = '5px solid #ef5350';  
+          div.querySelector('.order-header').innerHTML += ' – ❌ Cancelled';  
+          break;  
+        default:  
+          div.style.borderLeft = '5px solid #8bc34a';  
+      }  
+  
+      if (showStatusButtons) {  
+        const buttons = div.querySelectorAll('.status-buttons button');  
+  
+        buttons[0].addEventListener('click', () => {  
+          update(ref(db, `orders/${key}`), { status: 'pending' });  
+        });  
+  
+        buttons[1].addEventListener('click', () => {  
+          update(ref(db, `orders/${key}`), { status: 'processing' });  
+        });  
+  
+        buttons[2].addEventListener('click', async () => {  
+          try {  
+            const finalStatus = order.status === 'cancelled' ? 'cancelled' : 'completed';  
+            const finalNote = order.status === 'cancelled' ? (order.note || 'Sorry we don’t have it now') : '';  
+  
+            await set(ref(db, `completedOrders/${key}`), {  
+              ...order,  
+              status: finalStatus,  
+              note: finalNote  
+            });  
+  
+            await remove(ref(db, `orders/${key}`));  
+            div.remove();  
+            delete ordersMap[key];  
+  
+            if (currentView === 'history') {  
+              renderHistory();  
+            }  
+          } catch (err) {  
+            alert("Error moving order to history: " + err.message);  
+          }  
+        });  
+  
+        buttons[3].addEventListener('click', async () => {  
+          try {  
+            await update(ref(db, `orders/${key}`), { status: 'cancelled', note: 'Sorry we don’t have it now' });  
+          } catch (err) {  
+            alert("Error cancelling order: " + err.message);  
+          }  
+        });  
+      }  
+  
+      return div;  
+    }  
+  
+    const ordersMap = {};  
+    const completedMap = {};  
+let audioEnabled = false;  
+  
+function enableAudio() {  
+  if (!audioEnabled) {  
+    document.getElementById('orderBell').play().catch(() => {});  
+    audioEnabled = true;  
+  }  
+}  
+  
+document.body.addEventListener('click', enableAudio, { once: true });  
+document.body.addEventListener('touchstart', enableAudio, { once: true });  
+  
+    onChildAdded(ordersRef, (snapshot) => {  
+  const order = snapshot.val();  
+  const key = snapshot.key;  
+  ordersMap[key] = order;  
+  
+  // Prevent duplicate order cards  
+  if (!document.getElementById(key)) {  
+    if (currentView === 'orders') {  
+      const card = createOrderCard(order, key, true);  
+      ordersDiv.appendChild(card);  
+      sortOrderCards(ordersDiv);  
+    }  
+  }  
+  
+  // Play bell only if not notified yet  
+  if (!order.notified) {  
+    orderBell.play().catch((err) => {  
+      console.warn('Bell sound blocked until user interacts:', err);  
+    });  
+  
+    update(ref(db, `orders/${key}`), { notified: true });  
+  }  
+});  
+    onChildChanged(ordersRef, (snapshot) => {  
+      const key = snapshot.key;  
+      const order = snapshot.val();  
+      ordersMap[key] = order;  
+  
+      const existingCard = document.getElementById(key);  
+      if (existingCard) {  
+        const newCard = createOrderCard(order, key, true);  
+        ordersDiv.replaceChild(newCard, existingCard);  
+        sortOrderCards(ordersDiv);  
+      } else if (currentView === 'orders') {  
+        const newCard = createOrderCard(order, key, true);  
+        ordersDiv.appendChild(newCard);  
+        sortOrderCards(ordersDiv);  
+      }  
+    });  
+  
+    onChildRemoved(ordersRef, (snapshot) => {  
+      const key = snapshot.key;  
+      delete ordersMap[key];  
+      const el = document.getElementById(key);  
+      if (el && el.parentNode === ordersDiv) el.remove();  
+    });  
+  
+    onChildAdded(completedRef, (snapshot) => {  
+      const order = snapshot.val();  
+      const key = snapshot.key;  
+      completedMap[key] = order;  
+      if (currentView === 'history') {  
+        const card = createOrderCard(order, key, false);  
+        historyDiv.appendChild(card);  
+        sortOrderCards(historyDiv);  
+      }  
+    });  
+  
+    onChildRemoved(completedRef, (snapshot) => {  
+      const key = snapshot.key;  
+      delete completedMap[key];  
+      const el = document.getElementById(key);  
+      if (el && el.parentNode === historyDiv) el.remove();  
+    });  
+  
+    function sortOrderCards(container) {  
+      const cards = Array.from(container.children);  
+      cards.sort((a, b) => {  
+        const timeA = new Date(ordersMap[a.id]?.timestamp || completedMap[a.id]?.timestamp || 0).getTime();  
+        const timeB = new Date(ordersMap[b.id]?.timestamp || completedMap[b.id]?.timestamp || 0).getTime();  
+        return timeA - timeB;  
+      });  
+      cards.forEach(card => container.appendChild(card));  
+    }  
+  
+    const btnOrders = document.getElementById('btnOrders');  
+    const btnHistory = document.getElementById('btnHistory');  
+    let currentView = 'orders';  
+  
+    btnOrders.addEventListener('click', () => {  
+      if (currentView === 'orders') return;  
+      currentView = 'orders';  
+      btnOrders.classList.add('active');  
+      btnHistory.classList.remove('active');  
+      historyDiv.style.display = 'none';  
+      ordersDiv.style.display = 'flex';  
+      renderOrders();  
+    });  
+  
+    btnHistory.addEventListener('click', () => {  
+      if (currentView === 'history') return;  
+      currentView = 'history';  
+      btnHistory.classList.add('active');  
+      btnOrders.classList.remove('active');  
+      ordersDiv.style.display = 'none';  
+      historyDiv.style.display = 'flex';  
+      renderHistory();  
+    });  
+  
+    function renderOrders() {  
+      ordersDiv.innerHTML = '';  
+      for (const key in ordersMap) {  
+        const card = createOrderCard(ordersMap[key], key, true);  
+        ordersDiv.appendChild(card);  
+      }  
+      sortOrderCards(ordersDiv);  
+    }  
+  
+    function renderHistory() {  
+      historyDiv.innerHTML = '';  
+      for (const key in completedMap) {  
+        const card = createOrderCard(completedMap[key], key, false);  
+        historyDiv.appendChild(card);  
+      }  
+      sortOrderCards(historyDiv);  
+    }  
+  </script>    <!-- 🔔 Audio for bell -->  <audio id="orderBell" src="https://dravo08.github.io/Dravo-kholme/bell.mp3" preload="auto"></audio>
 
-  let total = 0;
-  if(Array.isArray(order.items)){
-    total = order.items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
-  }
-  const time = new Date(order.timestamp).toLocaleTimeString();
-  const table = order.table || order.tableNumber || 'N/A';
-
-  const div = document.createElement('div');
-  div.className = 'order-card';
-  div.id = key;
-  div.innerHTML = `
-    <div class="order-header">${order.name || (order.items && order.items[0]?.name) || 'Unnamed'} – Table ${table}</div>
-    <div class="order-info">Total: Rs. ${total}<br>Details:<br>${formatItems(order.items).replace(/\n/g, '<br>')}</div>
-    <div class="order-info">🕒 ${time}</div>
-    <div class="order-info">📝 Notes: ${order.note || order.description || 'None'}</div>
-    <div class="status-buttons">
-      <button class="pending">Pending</button>
-      <button class="processing">Processing</button>
-      <button class="completed">Completed</button>
-      <button class="cancel">Cancel</button>
-    </div>`;
-
-  const [b0, b1, b2, b3] = div.querySelectorAll('button');
-  b0.onclick = () => update(ref(db, `orders/${key}`), { status: 'pending' });
-  b1.onclick = () => update(ref(db, `orders/${key}`), { status: 'processing' });
-  b2.onclick = async () => {
-    const finalSt = order.status === 'cancelled' ? 'cancelled' : 'completed';
-    const finalNote = order.status === 'cancelled' ? (order.note || 'Sorry we don’t have it now') : '';
-    await set(ref(db, `completedOrders/${key}`), { ...order, status: finalSt, note: finalNote });
-    await remove(ref(db, `orders/${key}`));
-  };
-  b3.onclick = () => update(ref(db, `orders/${key}`), { status: 'cancelled', note: 'Sorry we don’t have it now' });
-
-  div.style.borderLeft = `5px solid ${
-    order.status === 'pending' ? '#ffcc80' :
-    order.status === 'processing' ? '#81d4fa' :
-    order.status === 'completed' ? '#aed581' :
-    order.status === 'cancelled' ? '#ef5350' : '#8bc34a'
-  }`;
-
-  container.appendChild(div);
-}
-
-onChildAdded(ordersRef, snapshot => {
-  const key = snapshot.key;
-  const order = snapshot.val();
-
-  if (!Array.isArray(order.items)) return;
-
-  // Determine type based on first item's type field
-  const itemType = order.items[0]?.type?.toLowerCase();
-
-  if (itemType === 'bar') {
-    attachCard(barSection, key, order);
-  } else {
-    attachCard(foodSection, key, order);
-  }
-
-  if (!order.notified) {
-    orderBell.play().catch(() => {});
-    update(ref(db, `orders/${key}`), { notified: true });
-  }
-});
-
-  if (!order.notified) {
-    orderBell.play().catch(() => {});
-    update(ref(db, `orders/${key}`), { notified: true });
-  }
-});
-
-  if (!order.notified) {
-    orderBell.play().catch(() => {});
-    update(ref(db, `orders/${key}`), { notified: true });
-  }
-});
-
-onChildRemoved(ordersRef, snap => {
-  const k = snap.key;
-  const el = document.getElementById(k);
-  if (el) el.remove();
-});
-
-btnOrders.onclick = () => {
-  btnOrders.classList.add('active');
-  btnHistory.classList.remove('active');
-  foodSection.parentElement.style.display = 'flex';
-};
-btnHistory.onclick = () => {
-  btnOrders.classList.remove('active');
-  btnHistory.classList.add('active');
-  foodSection.parentElement.style.display = 'none';
-};
-</script>
-</body>
-</html>
+</body>  
+</html>  
