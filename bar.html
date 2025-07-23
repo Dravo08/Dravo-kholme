@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Bar Dashboard – Kholm</title>
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    background: #f5f5f5;
+    margin: 0;
+    padding: 20px 0 56px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  h1 {
+    color: #4e342e;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  #container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0 20px;
+    overflow-y: auto;
+  }
+  .order-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+    padding: 15px;
+    margin-bottom: 12px;
+    border-left: 5px solid #8bc34a;
+    transition: border-color 0.3s;
+  }
+  .order-header { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
+  .order-info { margin-bottom: 8px; color: #333; white-space: pre-line; }
+  .status-buttons button {
+    margin-right: 6px;
+    padding: 5px 10px;
+    font-size: 13px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  .pending { background: #ffcc80; }
+  .processing { background: #81d4fa; }
+  .completed { background: #aed581; }
+  .cancel { background: #ef9a9a; }
+
+  #logout {
+    position: fixed;
+    top: 15px;
+    right: 20px;
+    background: #5d4037;
+    color: #fff;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 999;
+  }
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 48px;
+    background: #5d4037;
+    border-top: 1px solid #4a2e1a;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+    z-index: 999;
+    font-size: 20px;
+    color: #ddd;
+  }
+  .nav-button {
+    flex-grow: 1;
+    text-align: center;
+    cursor: pointer;
+    padding: 6px 0;
+    transition: color 0.3s, border-top 0.3s;
+    font-weight: 600;
+  }
+  .nav-button.active {
+    color: #f0e6d2;
+    border-top: 3px solid #8bc34a;
+    font-weight: 700;
+  }
+  #historySection {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>🍸 Bar Dashboard</h1>
+<button id="logout">Logout</button>
+
+<div id="container"></div>
+
+<audio id="orderBell" src="https://dravo08.github.io/Dravo-kholme/bell.mp3" preload="auto"></audio>
+
+<div class="bottom-nav">
+  <div id="btnOrders" class="nav-button active" title="Orders">🍴 Orders</div>
+  <div id="btnHistory" class="nav-button" title="History">📜 History</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+import { getDatabase, ref, onChildAdded, onChildRemoved, update, remove, onValue, set } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
+  authDomain: "kholme-menu1.firebaseapp.com",
+  databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
+  projectId: "kholme-menu1",
+  storageBucket: "kholme-menu1.appspot.com",
+  messagingSenderId: "434798935284",
+  appId: "1:434798935284:web:527ae90b4d4833a30ff2a1"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth();
+
+const ordersRef = ref(db, 'orders');
+const completedRef = ref(db, 'completedOrders');
+const menuRef = ref(db, 'menu');
+
+const container = document.getElementById('container');
+const logoutBtn = document.getElementById('logout');
+const orderBell = document.getElementById('orderBell');
+const btnOrders = document.getElementById('btnOrders');
+const btnHistory = document.getElementById('btnHistory');
+
+logoutBtn.onclick = () => signOut(auth).then(() => location.href = 'bar-login.html');
+onAuthStateChanged(auth, user => { if (!user) location.href = 'bar-login.html'; });
+
+let menuData = {};
+let ordersMap = {};
+let currentView = 'orders';
+
+// Load menu data once
+onValue(menuRef, snapshot => {
+  menuData = snapshot.val() || {};
+});
+
+// Helper: format items for display
+function formatItems(items) {
+  return items.map(i => {
+    const q = i.quantity || 1, p = i.price || 0;
+    return `${i.name} / Qty: ${q} / Rs.${p} each / Total: Rs.${q*p}`;
+  }).join('\n');
+}
+
+// Check if order is bar order (all items type "bar")
+function isBarOrder(order) {
+  if (!Array.isArray(order.items)) return false;
+  return order.items.every(item => {
+    for (const key in menuData) {
+      const menuItem = menuData[key];
+      if (menuItem.name === item.name) {
+        return menuItem.type === 'bar';
+      }
+    }
+    return false; // item not found in menuData
+  });
+}
+
+// Create an order card element (for both orders and completed orders)
+function createOrderCard(key, order, isCompleted = false) {
+  if (!Array.isArray(order.items)) return null;
+
+  const priceTotal = order.items.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0);
+
+  const div = document.createElement('div');
+  div.className = 'order-card';
+  div.id = key;
+
+  // Use fallback for table number and note
+  const tableNum = order.table || order.tableNumber || 'N/A';
+  const noteText = order.note || order.description || 'None';
+
+  // Border color based on status
+  let borderColor = '#8bc34a'; // default green
+  switch ((order.status || '').toLowerCase()) {
+    case 'pending': borderColor = '#ffcc80'; break;
+    case 'processing': borderColor = '#81d4fa'; break;
+    case 'completed': borderColor = '#aed581'; break;
+    case 'cancelled': borderColor = '#ef5350'; break;
+  }
+  div.style.borderLeftColor = borderColor;
+
+  if (!isCompleted) {
+    // Active orders show buttons
+    div.innerHTML = `
+      <div class="order-header">${order.name || order.items[0].name || 'Unnamed'} – Table ${tableNum}</div>
+      <div class="order-info">Total Price: Rs. ${priceTotal}<br>Details:<br>${formatItems(order.items).replace(/\n/g, '<br>')}</div>
+      <div class="order-info">🕒 ${new Date(order.timestamp).toLocaleTimeString()}</div>
+      <div class="order-info">📝 Notes: ${noteText}</div>
+      <div class="status-buttons">
+        <button class="pending">Pending</button>
+        <button class="processing">Processing</button>
+        <button class="completed">Completed</button>
+        <button class="cancel">Cancel</button>
+      </div>
+    `;
+
+    const [btnPending, btnProcessing, btnCompleted, btnCancel] = div.querySelectorAll('button');
+
+    btnPending.onclick = () => update(ref(db, `orders/${key}`), { status: 'pending' });
+    btnProcessing.onclick = () => update(ref(db, `orders/${key}`), { status: 'processing' });
+    btnCompleted.onclick = async () => {
+      const finalStatus = order.status === 'cancelled' ? 'cancelled' : 'completed';
+      const finalNote = order.status === 'cancelled' ? (order.note || 'Sorry we don’t have it now') : (order.note || order.description || '');
+      // Copy table info explicitly to completedOrders
+      const completedOrderData = {
+        ...order,
+        status: finalStatus,
+        note: finalNote,
+        table: order.table || order.tableNumber || 'N/A',
+      };
+      await update(ref(db, `orders/${key}`), { status: finalStatus });
+      await set(ref(db, `completedOrders/${key}`), completedOrderData);
+      await remove(ref(db, `orders/${key}`));
+    };
+    btnCancel.onclick = () => update(ref(db, `orders/${key}`), { status: 'cancelled', note: 'Sorry we don’t have it now' });
+  } else {
+    // Completed orders show info only
+    div.innerHTML = `
+      <div class="order-header">Table ${tableNum}</div>
+      <div class="order-info">${formatItems(order.items).replace(/\n/g, '<br>')}</div>
+      <div class="order-info">Status: ${order.status || 'Completed'}</div>
+      <div class="order-info">Time: ${new Date(order.timestamp).toLocaleTimeString()}</div>
+      <div class="order-info">Note: ${noteText}</div>
+    `;
+  }
+
+  return div;
+}
+
+// Render active bar orders
+function renderOrders() {
+  container.innerHTML = '';
+  const ordersArray = Object.entries(ordersMap)
+    .filter(([key, order]) => isBarOrder(order));
+
+  if (ordersArray.length === 0) {
+    container.innerHTML = '<p>No bar orders yet.</p>';
+    return;
+  }
+
+  ordersArray.forEach(([key, order]) => {
+    const card = createOrderCard(key, order, false);
+    if (card) container.appendChild(card);
+  });
+}
+
+// Render completed bar orders history
+function renderHistory() {
+  container.innerHTML = '<h3>Bar Order History</h3>';
+
+  onValue(completedRef, snapshot => {
+    container.innerHTML = '<h3>Bar Order History</h3>';
+    let count = 0;
+
+    snapshot.forEach(childSnapshot => {
+      const order = childSnapshot.val();
+
+      if (!Array.isArray(order.items)) return;
+
+      // Check if all items are bar type
+      const isBar = order.items.every(item => {
+        for (const key in menuData) {
+          const menuItem = menuData[key];
+          if (menuItem.name === item.name) {
+            return menuItem.type === 'bar';
+          }
+        }
+        return false;
+      });
+      if (!isBar) return;
+
+      count++;
+
+      const card = createOrderCard(childSnapshot.key, order, true);
+      if (card) container.appendChild(card);
+    });
+
+    if (count === 0) {
+      container.innerHTML += '<p>No completed bar orders yet.</p>';
+    }
+  }, { onlyOnce: true });
+}
+
+// Listen for new orders added
+onChildAdded(ordersRef, snapshot => {
+  ordersMap[snapshot.key] = snapshot.val();
+  if (currentView === 'orders') {
+    renderOrders();
+  }
+  const order = snapshot.val();
+  if (!order.notified) {
+    orderBell.play().catch(() => {});
+    update(ref(db, `orders/${snapshot.key}`), { notified: true });
+  }
+});
+
+// Listen for orders removed
+onChildRemoved(ordersRef, snapshot => {
+  delete ordersMap[snapshot.key];
+  const elem = document.getElementById(snapshot.key);
+  if (elem) elem.remove();
+});
+
+// Navigation buttons handlers
+btnOrders.onclick = () => {
+  currentView = 'orders';
+  btnOrders.classList.add('active');
+  btnHistory.classList.remove('active');
+  renderOrders();
+};
+btnHistory.onclick = () => {
+  currentView = 'history';
+  btnHistory.classList.add('active');
+  btnOrders.classList.remove('active');
+  renderHistory();
+};
+
+// Initial render
+renderOrders();
+</script>
+</body>
+</html>
