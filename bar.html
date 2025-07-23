@@ -193,6 +193,11 @@ function isBarOrder(order) {
 function createOrderCard(key, order, filteredItems, isCompleted = false) {
   if (!Array.isArray(filteredItems) || filteredItems.length === 0) return null;
 
+  // If this order's bar status is completed or cancelled, hide it from bar orders view
+  if (!isCompleted && order.status?.bar && ['completed','cancelled'].includes(order.status.bar)) {
+    return null;
+  }
+
   const priceTotal = filteredItems.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0);
 
   const div = document.createElement('div');
@@ -227,27 +232,38 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
 
     const [btnPending, btnProcessing, btnCompleted, btnCancel] = div.querySelectorAll('button');
 
-    btnPending.onclick = () => update(ref(db, `orders/${key}`), { status: 'pending' });
-    btnProcessing.onclick = () => update(ref(db, `orders/${key}`), { status: 'processing' });
+    btnPending.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), bar: 'pending' } });
+    btnProcessing.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), bar: 'processing' } });
+
     btnCompleted.onclick = async () => {
-      const finalStatus = order.status === 'cancelled' ? 'cancelled' : 'completed';
-      const finalNote = order.status === 'cancelled' ? (order.note || 'Sorry we don’t have it now') : (order.note || order.description || '');
-      const completedOrderData = {
-        ...order,
-        status: finalStatus,
-        note: finalNote,
-        table: order.table || order.tableNumber || 'N/A',
-      };
-      await update(ref(db, `orders/${key}`), { status: finalStatus });
-      await set(ref(db, `completedOrders/${key}`), completedOrderData);
-      await remove(ref(db, `orders/${key}`));
+      // Update only bar status to completed
+      const newStatus = { ...(order.status || {}), bar: 'completed' };
+
+      // Update order status.bar to completed in DB
+      await update(ref(db, `orders/${key}`), { status: newStatus });
+
+      // Update local copy to hide bar part immediately
+      ordersMap[key].status = newStatus;
+
+      // Check if kitchen is also completed or cancelled
+      const kitchenStatus = newStatus.kitchen || '';
+      if (kitchenStatus === 'completed' || kitchenStatus === 'cancelled') {
+        // Move entire order to completedOrders
+        await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, timestamp: Date.now() });
+        await remove(ref(db, `orders/${key}`));
+        delete ordersMap[key];
+      } else {
+        // Just re-render orders, bar part hidden from bar dashboard
+        renderOrders();
+      }
     };
-    btnCancel.onclick = () => update(ref(db, `orders/${key}`), { status: 'cancelled', note: 'Sorry we don’t have it now' });
+
+    btnCancel.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), bar: 'cancelled' }, note: 'Sorry we don’t have it now' });
   } else {
     div.innerHTML = `
       <div class="order-header">Table ${tableNum}</div>
       <div class="order-info">${formatItems(filteredItems).replace(/\n/g, '<br>')}</div>
-      <div class="order-info">Status: ${order.status || 'Completed'}</div>
+      <div class="order-info">Status: ${order.status?.bar || 'Completed'}</div>
       <div class="order-info">Time: ${new Date(order.timestamp).toLocaleTimeString()}</div>
       <div class="order-info">Note: ${noteText}</div>
     `;
@@ -343,4 +359,4 @@ btnHistory.onclick = () => {
 renderOrders();
 </script>
 </body>
-</html>
+  </html>
