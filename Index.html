@@ -463,14 +463,12 @@ searchBar.addEventListener('input', () => {
         if (checkbox.checked) {  
           qtyInput.disabled = false;  
           if (Number(qtyInput.value) === 0) qtyInput.value = 1;  
-          const val = Number(qtyInput.value) || 1; // get quantity or default to 1
-orderSelections[id] = {
-  selected: true,
-  quantity: val,
-  price: Number(item.price),
-  name: item.name,
-  type: item.type || 'food'  // default to food if missing
-};
+          orderSelections[id] = {  
+            selected: true,  
+            quantity: Number(qtyInput.value),  
+            price: Number(item.price),  
+            name: item.name,  
+          };  
         } else {  
           qtyInput.disabled = true;  
           qtyInput.value = 0;  
@@ -680,13 +678,11 @@ orderSelections[id] = {
       const newOrder = {  
         customerId,  
         tableNumber: Number(tableNumber),  
-        items: selectedItems.map(({ name, quantity, price, type }) => ({
-  name,
-  quantity,
-  price,
-  type,
-})),
-type: selectedItems[0].type || 'food',
+        items: selectedItems.map(({ name, quantity, price }) => ({  
+          name,  
+          quantity,  
+          price,  
+        })),  
         description: description,  
         status: 'pending',  
         timestamp: Date.now(),  
@@ -705,7 +701,7 @@ type: selectedItems[0].type || 'food',
           updateOrderSummary();  
   
           // Uncheck checkboxes and reset quantities in UI  
-                    document.querySelectorAll('.menu-item input[type="checkbox"]').forEach((cb) => (cb.checked = false));  
+          document.querySelectorAll('.menu-item input[type="checkbox"]').forEach((cb) => (cb.checked = false));  
           document.querySelectorAll('.menu-item input[type="number"]').forEach((input) => {  
             input.value = 0;  
             input.disabled = true;  
