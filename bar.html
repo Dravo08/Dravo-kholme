@@ -1,3 +1,4 @@
+<!-- bar.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,7 +32,7 @@
       box-shadow: 0 1px 5px rgba(0,0,0,0.1);
       padding: 15px;
       margin-bottom: 12px;
-      border-left: 5px solid #8bc34a;
+      border-left: 5px solid #ffa726;
       transition: border-color 0.3s;
     }
     .order-header { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
@@ -45,16 +46,16 @@
       cursor: pointer;
       transition: background-color 0.3s;
     }
-    .pending { background: #ffcc80; }
-    .processing { background: #81d4fa; }
-    .completed { background: #aed581; }
+    .pending { background: #ffe082; }
+    .processing { background: #4fc3f7; }
+    .completed { background: #a5d6a7; }
     .cancel { background: #ef9a9a; }
 
     #logout {
       position: fixed;
       top: 15px;
       right: 20px;
-      background: #5d4037;
+      background: #4e342e;
       color: #fff;
       padding: 8px 14px;
       border: none;
@@ -63,14 +64,22 @@
       z-index: 999;
     }
 
+    .order-card.cancelled {
+      background-color: #fddede;
+    }
+    .order-card.cancelled .order-info {
+      text-decoration: line-through;
+      color: #b71c1c;
+    }
+
     .bottom-nav {
       position: fixed;
       bottom: 0;
       left: 0;
       width: 100%;
       height: 48px;
-      background: #5d4037;
-      border-top: 1px solid #4a2e1a;
+      background: #4e342e;
+      border-top: 1px solid #3e2723;
       display: flex;
       justify-content: space-around;
       align-items: center;
@@ -89,7 +98,7 @@
     }
     .nav-button.active {
       color: #f0e6d2;
-      border-top: 3px solid #8bc34a;
+      border-top: 3px solid #ffa726;
       font-weight: 700;
     }
 
@@ -114,18 +123,19 @@
 </head>
 <body>
 
-<h1>🍸 Bar Dashboard</h1>
+<h1>🍹 Bar Dashboard</h1>
 <button id="logout">Logout</button>
 <div id="container"></div>
 
 <audio id="orderBell" src="https://dravo08.github.io/Dravo-kholme/bell.mp3" preload="auto"></audio>
 
 <div class="bottom-nav">
-  <div id="btnOrders" class="nav-button active" title="Orders">🍴 Orders</div>
+  <div id="btnOrders" class="nav-button active" title="Orders">🥃 Orders</div>
   <div id="btnHistory" class="nav-button" title="History">📜 History</div>
 </div>
 
 <button id="finalizeAllBtn" title="Finalize All Orders">🚨</button>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
 import { getDatabase, ref, onChildAdded, onChildChanged, onChildRemoved, update, remove, onValue, get, set } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
@@ -161,15 +171,21 @@ onAuthStateChanged(auth, user => { if (!user) location.href = 'bar-login.html'; 
 
 let menuData = {};
 let ordersMap = {};
-let completedMap = {};
 let currentView = 'orders';
 
-// Load menu data
 onValue(menuRef, snapshot => {
   menuData = snapshot.val() || {};
 });
 
-// Helpers
+// Helper function to detect if order is cancelled regardless of status type
+function checkIsCancelled(order) {
+  if (!order.status) return false;
+  if (typeof order.status === 'string') {
+    return order.status.toLowerCase() === 'cancelled';
+  }
+  return (order.status.bar === 'cancelled') || (order.status.overall === 'cancelled') || (order.status.kitchen === 'cancelled');
+}
+
 function formatItems(items) {
   return items.map(i => {
     const q = i.quantity || 1, p = i.price || 0;
@@ -181,9 +197,7 @@ function filterItemsByType(items, type) {
   return items.filter(item => {
     for (const key in menuData) {
       const menuItem = menuData[key];
-      if (menuItem.name === item.name) {
-        return menuItem.type === type;
-      }
+      if (menuItem.name === item.name) return menuItem.type === type;
     }
     return false;
   });
@@ -199,32 +213,40 @@ function isBarOrder(order) {
   });
 }
 
-// UI Card
+async function moveToCompleted(key, order, newStatus) {
+  await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, timestamp: Date.now() });
+  await remove(ref(db, `orders/${key}`));
+  delete ordersMap[key];
+}
+
 function createOrderCard(key, order, filteredItems, isCompleted = false) {
   if (!filteredItems.length) return null;
-  if (!isCompleted) {
-    const status = order.status?.bar?.toLowerCase();
-    if (status === 'completed' || status === 'cancelled') return null;
-  }
+
+  const isCancelled = checkIsCancelled(order);
+
+  // In active orders view show all including cancelled, in history show completed and cancelled
+  if (!isCompleted && order.status?.bar === 'completed' && !isCancelled) return null;
 
   const div = document.createElement('div');
-  div.className = 'order-card';
+  div.className = 'order-card' + (isCancelled ? ' cancelled' : '');
   div.id = key;
 
   const tableNum = order.table || order.tableNumber || 'N/A';
   const noteText = order.note || order.description || 'None';
   const total = filteredItems.reduce((sum, i) => sum + (i.price || 0) * (i.quantity || 1), 0);
 
-  let borderColor = '#8bc34a';
-  if (!isCompleted) {
+  // Border color based on status, prioritizing cancelled
+  let borderColor = '#ffa726'; // default orange
+  if (isCancelled) {
+    borderColor = '#ef9a9a';
+  } else if (!isCompleted) {
     switch ((order.status?.bar || '').toLowerCase()) {
-      case 'pending': borderColor = '#ffcc80'; break;
-      case 'processing': borderColor = '#81d4fa'; break;
-      case 'completed': borderColor = '#aed581'; break;
-      case 'cancelled': borderColor = '#ef5350'; break;
+      case 'pending':    borderColor = '#ffe082'; break;
+      case 'processing': borderColor = '#4fc3f7'; break;
+      case 'completed':  borderColor = '#a5d6a7'; break;
     }
   } else {
-    borderColor = order.status?.bar === 'cancelled' ? '#ef5350' : '#aed581';
+    borderColor = order.status?.bar === 'cancelled' ? '#ef9a9a' : '#a5d6a7';
   }
   div.style.borderLeftColor = borderColor;
 
@@ -241,16 +263,50 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
         <button class="cancel">Cancel</button>
       </div>
     `;
+
     const [btnPending, btnProcessing, btnCompleted, btnCancel] = div.querySelectorAll('button');
+
+    if (isCancelled) {
+      btnPending.disabled = true;
+      btnProcessing.disabled = true;
+      btnCompleted.disabled = true;
+      btnPending.style.opacity = '0.5';
+      btnProcessing.style.opacity = '0.5';
+      btnCompleted.style.opacity = '0.5';
+    } else {
+      btnPending.disabled = false;
+      btnProcessing.disabled = false;
+      btnCompleted.disabled = false;
+      btnPending.style.opacity = '1';
+      btnProcessing.style.opacity = '1';
+      btnCompleted.style.opacity = '1';
+    }
 
     btnPending.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), bar: 'pending' } });
     btnProcessing.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), bar: 'processing' } });
+
     btnCompleted.onclick = async () => {
+      if (isCancelled) return; 
+      function hasKitchenItems(items) {
+        return items.some(item => {
+          for (const k in menuData) {
+            if (menuData[k].name === item.name && menuData[k].type === 'kitchen') return true;
+          }
+          return false;
+        });
+      }
+      const hasKitchen = hasKitchenItems(order.items);
       const newStatus = { ...(order.status || {}), bar: 'completed' };
       await update(ref(db, `orders/${key}`), { status: newStatus });
-      const isBarDone = newStatus.bar === 'completed' || newStatus.bar === 'cancelled';
+
       const isKitchenDone = newStatus.kitchen === 'completed' || newStatus.kitchen === 'cancelled';
-      if (isBarDone && isKitchenDone) {
+      const isBarDone = newStatus.bar === 'completed' || newStatus.bar === 'cancelled';
+
+      if (!hasKitchen) {
+        await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, timestamp: Date.now() });
+        await remove(ref(db, `orders/${key}`));
+        delete ordersMap[key];
+      } else if (hasKitchen && isKitchenDone && isBarDone) {
         await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, timestamp: Date.now() });
         await remove(ref(db, `orders/${key}`));
         delete ordersMap[key];
@@ -258,16 +314,53 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
       renderOrders();
       if (currentView === 'history') renderHistory();
     };
-    btnCancel.onclick = () => update(ref(db, `orders/${key}`), {
-      status: { ...(order.status || {}), bar: 'cancelled' },
-      note: 'Sorry we don’t have it now'
-    });
+
+    btnCancel.onclick = async () => {
+      if (isCancelled) {
+        const newStatus = { ...(order.status || {}), bar: 'cancelled' };
+        await moveToCompleted(key, order, newStatus);
+        renderOrders();
+        if (currentView === 'history') renderHistory();
+        return;
+      }
+      await update(ref(db, `orders/${key}`), {
+        status: { ...(order.status || {}), bar: 'cancelled' },
+        note: 'Customer cancelled order'
+      });
+    };
   } else {
-    let statusText = 'Completed', statusClass = 'completed';
-    if (order.status?.bar === 'cancelled') {
-      statusText = 'Cancelled';
-      statusClass = 'cancel';
+    // History / Completed view
+    let statusText = 'Pending';
+    let statusClass = 'pending';
+
+    const barStatus = order.status;
+    if (typeof barStatus === 'object') {
+      if (barStatus.bar) {
+        if (barStatus.bar === 'processing') {
+          statusText = 'Processing';
+          statusClass = 'processing';
+        } else if (barStatus.bar === 'completed') {
+          statusText = 'Completed';
+          statusClass = 'completed';
+        } else if (barStatus.bar === 'cancelled') {
+          statusText = 'Cancelled';
+          statusClass = 'cancel';
+        }
+      }
+    } else if (typeof barStatus === 'string') {
+      // status is string
+      if (barStatus.toLowerCase() === 'processing') {
+        statusText = 'Processing';
+        statusClass = 'processing';
+      } else if (barStatus.toLowerCase() === 'completed') {
+        statusText = 'Completed';
+        statusClass = 'completed';
+      } else if (barStatus.toLowerCase() === 'cancelled') {
+        statusText = 'Cancelled';
+        statusClass = 'cancel';
+      }
     }
+
     div.innerHTML = `
       <div class="order-header">Table ${tableNum}</div>
       <div class="order-info">${formatItems(filteredItems).replace(/\n/g, '<br>')}</div>
@@ -280,7 +373,6 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
   return div;
 }
 
-// Rendering
 function renderOrders() {
   container.innerHTML = '';
   const ordersArray = Object.entries(ordersMap).filter(([_, order]) => isBarOrder(order));
@@ -316,11 +408,9 @@ function renderHistory() {
   }, { onlyOnce: true });
 }
 
-// Listeners
 onChildAdded(ordersRef, snapshot => {
-  const order = snapshot.val();
-  ordersMap[snapshot.key] = order;
-  if (!order.notified) {
+  ordersMap[snapshot.key] = snapshot.val();
+  if (!ordersMap[snapshot.key].notified) {
     orderBell.play().catch(() => {});
     update(ref(db, `orders/${snapshot.key}`), { notified: true });
   }
@@ -336,7 +426,6 @@ onChildRemoved(ordersRef, snapshot => {
   if (elem) elem.remove();
 });
 
-// Navigation
 btnOrders.onclick = () => {
   currentView = 'orders';
   btnOrders.classList.add('active');
@@ -350,9 +439,8 @@ btnHistory.onclick = () => {
   renderHistory();
 };
 
-// Finalize all
 finalizeAllBtn.onclick = async () => {
-  if (!confirm('🚨 Are you sure you want to finalize ALL orders?')) return;
+  if (!confirm('🚨 Are you sure you want to finalize ALL bar orders?')) return;
   try {
     const snapshot = await get(ordersRef);
     const all = snapshot.val();
@@ -364,15 +452,15 @@ finalizeAllBtn.onclick = async () => {
     }
     await update(ref(db), updates);
     alert('✅ All orders moved to completedOrders.');
-    if (currentView === 'orders') renderOrders();
-    if (currentView === 'history') renderHistory();
+    renderOrders();
+    renderHistory();
   } catch (e) {
     alert('❌ Failed to finalize: ' + e.message);
   }
 };
-
-// Initial render
 renderOrders();
+
 </script>
+
 </body>
 </html>
