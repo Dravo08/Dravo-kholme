@@ -7,7 +7,85 @@
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-  	
+  	body {
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #111827; /* dark background */
+  color: #e5e7eb; /* light text */
+}
+
+.nav-bar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 64px;
+  background-color: #111827;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid #2c2c2c;
+  box-shadow: 0 -1px 8px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  user-select: none;
+}
+
+.nav-button {
+  flex: 1;
+  border: none;
+  background: none;
+  color: #cbd5e1; /* soft gray */
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  transition: color 0.25s ease;
+  cursor: pointer;
+  outline-offset: 3px;
+  outline-color: transparent;
+  outline-style: solid;
+  outline-width: 2px;
+}
+
+.nav-button:focus-visible {
+  outline-color: #60a5fa; /* subtle blue focus ring */
+  outline-style: solid;
+}
+
+.nav-icon {
+  font-size: 22px;
+  margin-bottom: 4px;
+  line-height: 1;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.nav-button:hover,
+.nav-button:focus-visible {
+  color: #93c5fd; /* lighter blue on hover/focus */
+}
+
+.nav-button:hover .nav-icon,
+.nav-button:focus-visible .nav-icon {
+  transform: scale(1.1); /* gentle scaling */
+  color: #93c5fd;
+}
+
+.nav-button.active {
+  color: #3b82f6; /* bright blue for active */
+  font-weight: 600;
+}
+
+.nav-button.active .nav-icon {
+  transform: scale(1.15);
+  color: #3b82f6;
+}
+
+.nav-button span:last-child {
+  margin-top: 2px;
+  user-select: none;
+}
     :root {
       --primary: #4e342e;
       --accent: #8bc34a;
@@ -274,11 +352,11 @@
   </style>
 </head>
 <body>
-  <header class="wood-header"> ☕ Cafe Kholmay – Owner Panel</header>
+  <header class="wood-header"> Cafe Kholmay – Owner Panel</header>
 
   <!-- Sales Section -->
   <div class="section active" id="totalSales">
-    <h2>💲 Today's Total Sales</h2>
+    <h2>Today's Total Sales</h2>
     <div style="
   border: 1px solid #ddd; 
   border-radius: 8px; 
@@ -288,7 +366,7 @@
   width: 300px;">
     <p id="sales-summary">Loading...</p>
     </div></br>
-    <h3>🥇 Top 3 Best Sellers</h3>
+    <h3>Top 3 Best Sellers</h3>
     <div style="
   border: 1px solid #ddd; 
   border-radius: 8px; 
@@ -304,7 +382,7 @@
       <tbody id="best-seller"><tr><td colspan="3">Loading...</td></tr></tbody>
     </table>
 </div>  </br>
-    <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">📊 Weekly Sales</h3>
+    <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Weekly Sales</h3>
 <div style="
   border: 1px solid #ddd; 
   border-radius: 8px; 
@@ -322,7 +400,7 @@
 </div> </div>    
   <!-- Order History Section -->
   <div class="section" id="orderHistory">
-    <h2>📖 Order History (Filtered)</h2>
+    <h2> Order History (Filtered)</h2>
     <div class="filter-bar">
       <label for="filterDate">Filter by Date:</label>
       <input type="date" id="filterDate" aria-label="Filter orders by date" />
@@ -337,7 +415,7 @@
 
   <!-- Add New Menu Item Section -->
   <div class="section" id="addItems">
-    <h2>✏️ Add New Menu Item</h2>
+    <h2>Add New Menu Item</h2>
     <form id="add-menu-form" aria-label="Add new menu item form">
       <input type="text" id="new-name" placeholder="Item Name" required aria-required="true" />
       <input type="number" id="new-price" placeholder="Price (Rs.)" required min="0" aria-required="true" />
@@ -354,19 +432,82 @@
 
   <!-- Sales History Section -->
   <div class="section" id="salesHistory">
-    <h2>📅📊 Sales History</h2>
+    <h2>Sales History</h2>
     <div id="sales-history">Loading...</div>
   </div>
-
+  
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <!-- Navigation Bar -->
-  <nav class="nav-bar" role="navigation" aria-label="Main navigation">
-    <button class="nav-button active" data-section="totalSales" aria-pressed="true">💲<br>Sales</button>
-    <button class="nav-button" data-section="orderHistory" aria-pressed="false">📖<br>Orders</button>
-    <button class="nav-button" data-section="addItems" aria-pressed="false">➕<br>Add</button>
-    <button class="nav-button" data-section="salesHistory" aria-pressed="false">📅<br>History</button>
-    <button class="nav-button" id="logoutBtn">⏏️<br>Logout</button>
-  </nav>
- 
+  <style>
+  .nav-bar {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 64px;
+    background-color: #674d43; /* dark background */
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid #2c2c2c;
+    z-index: 1000;
+  }
+
+  .nav-button {
+    flex: 1;
+    border: none;
+    background: none;
+    color: white;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0;
+    transition: color 0.3s ease;
+  }
+
+  .nav-icon {
+    font-size: 20px; /* small icon */
+    margin-bottom: 2px;
+    line-height: 1;
+  }
+
+  .nav-button.active {
+    color: #D5C1A8; /* Blue for active */
+    font-weight: 600;
+  }
+
+  .nav-button:hover {
+    color: #fff;
+  }
+
+  .nav-button span:last-child {
+    margin-top: 2px;
+  }
+</style>
+
+<nav class="nav-bar" role="navigation" aria-label="Main navigation">
+  <button class="nav-button active" data-section="totalSales" aria-pressed="true">
+    <span class="material-icons-round nav-icon">insights</span>
+    <span>Sales</span>
+  </button>
+  <button class="nav-button" data-section="orderHistory" aria-pressed="false">
+    <span class="material-icons-round nav-icon">receipt_long</span>
+    <span>Orders</span>
+  </button>
+  <button class="nav-button" data-section="addItems" aria-pressed="false">
+    <span class="material-icons-round nav-icon">add_circle</span>
+    <span>Add</span>
+  </button>
+  <button class="nav-button" data-section="salesHistory" aria-pressed="false">
+    <span class="material-icons-round nav-icon">calendar_month</span>
+    <span>History</span>
+  </button>
+  <button class="nav-button" id="logoutBtn">
+    <span class="material-icons-round nav-icon">logout</span>
+    <span>Logout</span>
+  </button>
+</nav>
   <script type="module">
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
@@ -464,7 +605,7 @@ function updateChart(labels, data, rawDates) {
           ticks: {
             color: '#2e7d32',
             font: {
-              size: 10  // 👈 smaller day labels (Sun Mon Tue)
+              size: 10  //  smaller day labels (Sun Mon Tue)
             },
             padding: 4 // tighter spacing if needed
           }
@@ -473,7 +614,7 @@ function updateChart(labels, data, rawDates) {
           beginAtZero: true,
           ticks: {
             font: {
-              size: 10// 👈 smaller y-axis numbers
+              size: 10//  smaller y-axis numbers
             },
             padding: 4
           }
@@ -482,6 +623,7 @@ function updateChart(labels, data, rawDates) {
     }
   });
 }
+
     function getBestSellingItem(orders) {
       const itemMap = {};
       let todayTotal = 0;
@@ -489,7 +631,7 @@ function updateChart(labels, data, rawDates) {
 
       for (const id in orders) {
         const order = orders[id];
-        if (order.status === 'cancelled') continue;
+ if (isCancelled(order.status)) continue;
 
         const orderDate = new Date(order.timestamp || 0).toISOString().slice(0, 10);
         let price = 0;
@@ -543,7 +685,7 @@ function updateChart(labels, data, rawDates) {
         // Accumulate sales per day
         for (const key in data) {
           const order = data[key];
-          if (order.status === 'cancelled') continue;
+          if (isCancelled(order.status)) continue;
           const orderDate = order.timestamp ? new Date(order.timestamp).toISOString().slice(0, 10) : null;
           if (!orderDate || !rawDates.includes(orderDate)) continue;
 
@@ -595,7 +737,38 @@ function formatDate(ts) {
   const d = new Date(ts);
   return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
+function getSimpleStatus(status) {
+  if (!status) return 'N/A';
 
+  // If status is a plain string like 'cancelled' or 'completed'
+  if (typeof status === 'string') {
+    return status.toLowerCase() === 'cancelled' ? 'Cancelled' : 'Completed';
+  }
+
+  // If status is an object (e.g., { kitchen: 'cancelled', bar: 'completed' })
+  if (typeof status === 'object') {
+    const values = Object.values(status).map(val => (val || '').toLowerCase());
+    if (values.includes('cancelled')) return 'Cancelled';
+
+    // Only return 'Completed' if ALL statuses are completed
+    const allCompleted = values.every(val => val === 'completed');
+    return allCompleted ? 'Completed' : 'In Progress';
+  }
+
+  return 'N/A';
+}
+function isCancelled(status) {
+  if (!status) return false;
+  if (typeof status === 'string') return status.toLowerCase() === 'cancelled';
+  if (typeof status === 'object') {
+    return (
+      (status.kitchen && status.kitchen.toLowerCase() === 'cancelled') ||
+      (status.bar && status.bar.toLowerCase() === 'cancelled') ||
+      (status.overall && status.overall.toLowerCase() === 'cancelled')
+    );
+  }
+  return false;
+}
 // Render orders list
 function renderOrders(allOrders, filterToDate = null) {
   const today = new Date().toISOString().slice(0, 10);
@@ -609,10 +782,14 @@ function renderOrders(allOrders, filterToDate = null) {
     const orderDate = order.timestamp ? new Date(order.timestamp).toISOString().slice(0, 10) : '';
     if (orderDate !== targetDate) return;
 
-    const statusClass = order.status === 'cancelled' ? 'cancelled' : '';
-    if (order.status === 'cancelled') cancelledCount++;
-    else completedCount++;
+    const cancelled = isCancelled(order.status);
+const statusClass = cancelled ? 'cancelled' : '';
 
+if (cancelled) {
+  cancelledCount++;
+} else {
+  completedCount++;
+}
     let orderTotal = 0;
 
     if (Array.isArray(order.items)) {
@@ -631,7 +808,7 @@ function renderOrders(allOrders, filterToDate = null) {
       <h4>Order ID: ${key}</h4>
       <div class="order-details">
         <strong>Date:</strong> ${formatDate(order.timestamp)}<br />
-        <strong>Status:</strong> ${order.status || 'N/A'}<br />
+        <strong>Status:</strong> ${getSimpleStatus(order.status)}<br />
         <strong>Items:</strong><br />
         <ul>`;
 
@@ -735,7 +912,6 @@ deleteOrdersDayBtn.addEventListener('click', async () => {
 // Show today's orders on page load
 window.addEventListener('DOMContentLoaded', loadAllOrders);
 
-    // ====== MENU MANAGEMENT SECTION LOGIC ======
 // ====== MENU MANAGEMENT SECTION LOGIC ======
 const menuRef = ref(db, 'menu');
 const menuContainer = document.getElementById('menu');
@@ -954,3 +1130,4 @@ addMenuForm.addEventListener('submit', async e => {
   </script>
 </body>
 </html>
+ 
