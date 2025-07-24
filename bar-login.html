@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dravo – barLogin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #f3e9dc, #fff7ef);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .login-box {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .login-box img {
+      height: 50px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin: 0 0 6px;
+      font-size: 1.6rem;
+      color: #5d4037;
+    }
+
+    p {
+      margin-bottom: 20px;
+      color: #7b5e52;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+
+    input:focus {
+      border-color: #a1887f;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(161, 136, 127, 0.2);
+    }
+
+    button {
+      background-color: #6d4c41;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #5d4037;
+    }
+
+    #message {
+      color: red;
+      font-size: 0.9rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <img src="https://raw.githubusercontent.com/AjayDevgan1/Menu.digital/main/20250719_095724.jpg" alt="Logo" />
+    <h2>Welcome to Dravo</h2>
+    <p>barPanel Login</p>
+
+    <form id="login-form">
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+      <div id="message"></div>
+    </form>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
+      authDomain: "kholme-menu1.firebaseapp.com",
+      databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
+      projectId: "kholme-menu1",
+      storageBucket: "kholme-menu1.appspot.com",
+      messagingSenderId: "434798935284",
+      appId: "1:434798935284:web:527ae90b4d4833a30ff2a1",
+      measurementId: "G-9XG8BZ9YXK"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const form = document.getElementById('login-form');
+    const messageDiv = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      const password = document.getElementById('password').value.trim();
+
+      messageDiv.innerText = "";
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        if (user.email === "kholme@menu.com") {
+          localStorage.setItem("role", "kitchen");
+          window.location.href = "bar.html";  // Redirect to barpage
+        } else {
+          messageDiv.innerText = "Not authorized for barpanel.";
+          await signOut(auth);
+        }
+      } catch (error) {
+        if (error.code === "auth/too-many-requests") {
+          messageDiv.innerText = "Too many attempts. Try again later.";
+        } else {
+          messageDiv.innerText = "Login failed: " + error.message;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
