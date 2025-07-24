@@ -1,109 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Kitchen Dashboard – Kholm</title>
-<style>
-  body {
-    font-family: "Segoe UI", sans-serif;
-    background: #f5f5f5;
-    margin: 0;
-    padding: 20px 0 56px;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-  h1 {
-    color: #4e342e;
-    text-align: center;
-    margin-bottom: 10px;
-  }
-  #container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 0 20px;
-    overflow-y: auto;
-  }
-  .order-card {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-    padding: 15px;
-    margin-bottom: 12px;
-    border-left: 5px solid #8bc34a;
-    transition: border-color 0.3s;
-  }
-  .order-header { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
-  .order-info { margin-bottom: 8px; color: #333; white-space: pre-line; }
-  .status-buttons button {
-    margin-right: 6px;
-    padding: 5px 10px;
-    font-size: 13px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  .pending { background: #ffcc80; }
-  .processing { background: #81d4fa; }
-  .completed { background: #aed581; }
-  .cancel { background: #ef9a9a; }
+  <meta charset="UTF-8" />
+  <title>Bar Dashboard – Kholm</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px 0 56px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    h1 {
+      color: #4e342e;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    #container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 0 20px;
+      overflow-y: auto;
+    }
+    .order-card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+      padding: 15px;
+      margin-bottom: 12px;
+      border-left: 5px solid #8bc34a;
+      transition: border-color 0.3s;
+    }
+    .order-header { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
+    .order-info { margin-bottom: 8px; color: #333; white-space: pre-line; }
+    .status-buttons button {
+      margin-right: 6px;
+      padding: 5px 10px;
+      font-size: 13px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .pending { background: #ffcc80; }
+    .processing { background: #81d4fa; }
+    .completed { background: #aed581; }
+    .cancel { background: #ef9a9a; }
 
-  #logout {
-    position: fixed;
-    top: 15px;
-    right: 20px;
-    background: #5d4037;
-    color: #fff;
-    padding: 8px 14px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    z-index: 999;
-  }
-  .bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 48px;
-    background: #5d4037;
-    border-top: 1px solid #4a2e1a;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
-    z-index: 999;
-    font-size: 20px;
-    color: #ddd;
-  }
-  .nav-button {
-    flex-grow: 1;
-    text-align: center;
-    cursor: pointer;
-    padding: 6px 0;
-    transition: color 0.3s, border-top 0.3s;
-    font-weight: 600;
-  }
-  .nav-button.active {
-    color: #f0e6d2;
-    border-top: 3px solid #8bc34a;
-    font-weight: 700;
-  }
-  #historySection {
-    padding: 20px;
-    overflow-y: auto;
-    flex: 1;
-    display: none;
-  }
-</style>
+    #logout {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      background: #5d4037;
+      color: #fff;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 999;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 48px;
+      background: #5d4037;
+      border-top: 1px solid #4a2e1a;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+      z-index: 999;
+      font-size: 20px;
+      color: #ddd;
+    }
+    .nav-button {
+      flex-grow: 1;
+      text-align: center;
+      cursor: pointer;
+      padding: 6px 0;
+      transition: color 0.3s, border-top 0.3s;
+      font-weight: 600;
+    }
+    .nav-button.active {
+      color: #f0e6d2;
+      border-top: 3px solid #8bc34a;
+      font-weight: 700;
+    }
+
+    #finalizeAllBtn {
+      position: fixed;
+      bottom: 60px;
+      right: 20px;
+      background: #e53935;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      font-size: 22px;
+      line-height: 44px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(229, 57, 53, 0.7);
+      z-index: 1000;
+    }
+  </style>
 </head>
 <body>
 
-<h1>🍽️ Kitchen Dashboard</h1>
+<h1>🍸 Bar Dashboard</h1>
 <button id="logout">Logout</button>
-
 <div id="container"></div>
 
 <audio id="orderBell" src="https://dravo08.github.io/Dravo-kholme/bell.mp3" preload="auto"></audio>
@@ -113,9 +125,10 @@
   <div id="btnHistory" class="nav-button" title="History">📜 History</div>
 </div>
 
+<button id="finalizeAllBtn" title="Finalize All Orders">🚨</button>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-import { getDatabase, ref, onChildAdded, onChildRemoved, update, remove, onValue, set } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+import { getDatabase, ref, onChildAdded, onChildChanged, onChildRemoved, update, remove, onValue, get, set } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -141,28 +154,29 @@ const logoutBtn = document.getElementById('logout');
 const orderBell = document.getElementById('orderBell');
 const btnOrders = document.getElementById('btnOrders');
 const btnHistory = document.getElementById('btnHistory');
+const finalizeAllBtn = document.getElementById('finalizeAllBtn');
 
-logoutBtn.onclick = () => signOut(auth).then(() => location.href = 'kitchen-login.html');
-onAuthStateChanged(auth, user => { if (!user) location.href = 'kitchen-login.html'; });
+logoutBtn.onclick = () => signOut(auth).then(() => location.href = 'bar-login.html');
+onAuthStateChanged(auth, user => { if (!user) location.href = 'bar-login.html'; });
 
 let menuData = {};
 let ordersMap = {};
+let completedMap = {};
 let currentView = 'orders';
 
-// Load menu data once
+// Load menu data
 onValue(menuRef, snapshot => {
   menuData = snapshot.val() || {};
 });
 
-// Format order items for display
+// Helpers
 function formatItems(items) {
   return items.map(i => {
     const q = i.quantity || 1, p = i.price || 0;
-    return `${i.name} / Qty: ${q} / Rs.${p} each / Total: Rs.${q*p}`;
+    return `${i.name} / Qty: ${q} / Rs.${p} each / Total: Rs.${q * p}`;
   }).join('\n');
 }
 
-// Filter items by type 'kitchen'
 function filterItemsByType(items, type) {
   return items.filter(item => {
     for (const key in menuData) {
@@ -175,30 +189,23 @@ function filterItemsByType(items, type) {
   });
 }
 
-// Check if order contains at least one kitchen item
-function isKitchenOrder(order) {
-  if (!Array.isArray(order.items)) return false;
-  return order.items.some(item => {
+function isBarOrder(order) {
+  return Array.isArray(order.items) && order.items.some(item => {
     for (const key in menuData) {
       const menuItem = menuData[key];
-      if (menuItem.name === item.name) {
-        return menuItem.type === 'kitchen';
-      }
+      if (menuItem.name === item.name) return menuItem.type === 'bar';
     }
     return false;
   });
 }
 
-// Create order card showing only kitchen items
+// UI Card
 function createOrderCard(key, order, filteredItems, isCompleted = false) {
-  if (!Array.isArray(filteredItems) || filteredItems.length === 0) return null;
-
-  // If kitchen status is completed or cancelled, hide from kitchen orders view (unless in history view)
-  if (!isCompleted && order.status?.kitchen && ['completed','cancelled'].includes(order.status.kitchen)) {
-    return null;
+  if (!filteredItems.length) return null;
+  if (!isCompleted) {
+    const status = order.status?.bar?.toLowerCase();
+    if (status === 'completed' || status === 'cancelled') return null;
   }
-
-  const priceTotal = filteredItems.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0);
 
   const div = document.createElement('div');
   div.className = 'order-card';
@@ -206,23 +213,26 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
 
   const tableNum = order.table || order.tableNumber || 'N/A';
   const noteText = order.note || order.description || 'None';
+  const total = filteredItems.reduce((sum, i) => sum + (i.price || 0) * (i.quantity || 1), 0);
 
   let borderColor = '#8bc34a';
-  // Use kitchen part status or overall status for border color
-  let statusForColor = (order.status && order.status.kitchen) ? order.status.kitchen : (typeof order.status === 'string' ? order.status : '');
-  switch (statusForColor.toLowerCase()) {
-    case 'pending': borderColor = '#ffcc80'; break;
-    case 'processing': borderColor = '#81d4fa'; break;
-    case 'completed': borderColor = '#aed581'; break;
-    case 'cancelled': borderColor = '#ef5350'; break;
+  if (!isCompleted) {
+    switch ((order.status?.bar || '').toLowerCase()) {
+      case 'pending': borderColor = '#ffcc80'; break;
+      case 'processing': borderColor = '#81d4fa'; break;
+      case 'completed': borderColor = '#aed581'; break;
+      case 'cancelled': borderColor = '#ef5350'; break;
+    }
+  } else {
+    borderColor = order.status?.bar === 'cancelled' ? '#ef5350' : '#aed581';
   }
   div.style.borderLeftColor = borderColor;
 
   if (!isCompleted) {
     div.innerHTML = `
       <div class="order-header">${order.name || filteredItems[0].name || 'Unnamed'} – Table ${tableNum}</div>
-      <div class="order-info">Total Price: Rs. ${priceTotal}<br>Details:<br>${formatItems(filteredItems).replace(/\n/g, '<br>')}</div>
-      <div class="order-info">🕒 ${order.timestamp ? new Date(order.timestamp).toLocaleTimeString() : 'Unknown'}</div>
+      <div class="order-info">Total Price: Rs. ${total}<br>Details:<br>${formatItems(filteredItems).replace(/\n/g, '<br>')}</div>
+      <div class="order-info">🕒 ${new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
       <div class="order-info">📝 Notes: ${noteText}</div>
       <div class="status-buttons">
         <button class="pending">Pending</button>
@@ -231,55 +241,38 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
         <button class="cancel">Cancel</button>
       </div>
     `;
-
     const [btnPending, btnProcessing, btnCompleted, btnCancel] = div.querySelectorAll('button');
 
-    btnPending.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), kitchen: 'pending' } });
-    btnProcessing.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), kitchen: 'processing' } });
-
+    btnPending.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), bar: 'pending' } });
+    btnProcessing.onclick = () => update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), bar: 'processing' } });
     btnCompleted.onclick = async () => {
-      // Update kitchen status to completed
-      const newStatus = { ...(order.status || {}), kitchen: 'completed' };
-
+      const newStatus = { ...(order.status || {}), bar: 'completed' };
       await update(ref(db, `orders/${key}`), { status: newStatus });
-
-      // Update local map so UI reflects immediately
-      ordersMap[key].status = newStatus;
-
-      // Check if bar is also completed or cancelled
-      const barStatus = newStatus.bar || '';
-      if (barStatus === 'completed' || barStatus === 'cancelled') {
-        // Both completed/cancelled — move whole order to completedOrders and remove from orders
+      const isBarDone = newStatus.bar === 'completed' || newStatus.bar === 'cancelled';
+      const isKitchenDone = newStatus.kitchen === 'completed' || newStatus.kitchen === 'cancelled';
+      if (isBarDone && isKitchenDone) {
         await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, timestamp: Date.now() });
         await remove(ref(db, `orders/${key}`));
         delete ordersMap[key];
-      } else {
-        // Otherwise just rerender so kitchen part hides
-        renderOrders();
       }
+      renderOrders();
+      if (currentView === 'history') renderHistory();
     };
-
-    btnCancel.onclick = async () => {
-      const newStatus = { ...(order.status || {}), kitchen: 'cancelled' };
-      await update(ref(db, `orders/${key}`), { status: newStatus, note: 'Sorry we don’t have it now' });
-
-      ordersMap[key].status = newStatus;
-
-      const barStatus = newStatus.bar || '';
-      if (barStatus === 'completed' || barStatus === 'cancelled') {
-        await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, note: 'Sorry we don’t have it now', timestamp: Date.now() });
-        await remove(ref(db, `orders/${key}`));
-        delete ordersMap[key];
-      } else {
-        renderOrders();
-      }
-    };
+    btnCancel.onclick = () => update(ref(db, `orders/${key}`), {
+      status: { ...(order.status || {}), bar: 'cancelled' },
+      note: 'Sorry we don’t have it now'
+    });
   } else {
+    let statusText = 'Completed', statusClass = 'completed';
+    if (order.status?.bar === 'cancelled') {
+      statusText = 'Cancelled';
+      statusClass = 'cancel';
+    }
     div.innerHTML = `
       <div class="order-header">Table ${tableNum}</div>
       <div class="order-info">${formatItems(filteredItems).replace(/\n/g, '<br>')}</div>
-      <div class="order-info">Status: ${order.status?.kitchen || 'Completed'}</div>
-      <div class="order-info">Time: ${order.timestamp ? new Date(order.timestamp).toLocaleTimeString() : 'Unknown'}</div>
+      <div class="order-info status-label ${statusClass}">Status: ${statusText}</div>
+      <div class="order-info">Time: ${new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
       <div class="order-info">Note: ${noteText}</div>
     `;
   }
@@ -287,83 +280,69 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
   return div;
 }
 
-// Render active kitchen orders
+// Rendering
 function renderOrders() {
   container.innerHTML = '';
-
-  const ordersArray = Object.entries(ordersMap)
-    .filter(([key, order]) => isKitchenOrder(order));
-
-  if (ordersArray.length === 0) {
-    container.innerHTML = '<p>No kitchen orders yet.</p>';
+  const ordersArray = Object.entries(ordersMap).filter(([_, order]) => isBarOrder(order));
+  if (!ordersArray.length) {
+    container.innerHTML = '<p>No bar orders yet.</p>';
     return;
   }
-
+  ordersArray.sort((a, b) => (a[1].timestamp || 0) - (b[1].timestamp || 0));
   ordersArray.forEach(([key, order]) => {
-    const filteredItems = filterItemsByType(order.items, 'kitchen');
-    if (filteredItems.length === 0) return;
-
-    const card = createOrderCard(key, order, filteredItems, false);
+    const filtered = filterItemsByType(order.items, 'bar');
+    const card = createOrderCard(key, order, filtered, false);
     if (card) container.appendChild(card);
   });
 }
 
-// Render completed kitchen orders history
 function renderHistory() {
-  container.innerHTML = '<h3>Kitchen Order History</h3>';
-
+  container.innerHTML = '<h3>Bar Order History</h3>';
   onValue(completedRef, snapshot => {
-    container.innerHTML = '<h3>Kitchen Order History</h3>';
+    container.innerHTML = '<h3>Bar Order History</h3>';
     let count = 0;
-
-    snapshot.forEach(childSnapshot => {
-      const order = childSnapshot.val();
+    snapshot.forEach(child => {
+      const order = child.val();
       if (!Array.isArray(order.items)) return;
-
-      const filteredItems = filterItemsByType(order.items, 'kitchen');
-      if (filteredItems.length === 0) return;
-
-      count++;
-      const card = createOrderCard(childSnapshot.key, order, filteredItems, true);
-      if (card) container.appendChild(card);
+      const filtered = filterItemsByType(order.items, 'bar');
+      if (!filtered.length) return;
+      const card = createOrderCard(child.key, order, filtered, true);
+      if (card) {
+        count++;
+        container.appendChild(card);
+      }
     });
-
-    if (count === 0) {
-      container.innerHTML += '<p>No completed kitchen orders yet.</p>';
-    }
+    if (count === 0) container.innerHTML += '<p>No completed bar orders yet.</p>';
   }, { onlyOnce: true });
 }
 
-// Listen for new orders added
+// Listeners
 onChildAdded(ordersRef, snapshot => {
-  ordersMap[snapshot.key] = snapshot.val();
-
-  if (currentView === 'orders') {
-    renderOrders();
-  }
-
   const order = snapshot.val();
+  ordersMap[snapshot.key] = order;
   if (!order.notified) {
     orderBell.play().catch(() => {});
     update(ref(db, `orders/${snapshot.key}`), { notified: true });
   }
+  if (currentView === 'orders') renderOrders();
 });
-
-// Listen for orders removed
+onChildChanged(ordersRef, snapshot => {
+  ordersMap[snapshot.key] = snapshot.val();
+  if (currentView === 'orders') renderOrders();
+});
 onChildRemoved(ordersRef, snapshot => {
   delete ordersMap[snapshot.key];
   const elem = document.getElementById(snapshot.key);
   if (elem) elem.remove();
 });
 
-// Navigation button handlers
+// Navigation
 btnOrders.onclick = () => {
   currentView = 'orders';
   btnOrders.classList.add('active');
   btnHistory.classList.remove('active');
   renderOrders();
 };
-
 btnHistory.onclick = () => {
   currentView = 'history';
   btnHistory.classList.add('active');
@@ -371,9 +350,29 @@ btnHistory.onclick = () => {
   renderHistory();
 };
 
+// Finalize all
+finalizeAllBtn.onclick = async () => {
+  if (!confirm('🚨 Are you sure you want to finalize ALL orders?')) return;
+  try {
+    const snapshot = await get(ordersRef);
+    const all = snapshot.val();
+    if (!all) return alert('No orders to finalize.');
+    const updates = {};
+    for (const [id, order] of Object.entries(all)) {
+      updates[`completedOrders/${id}`] = { ...order, timestamp: Date.now() };
+      updates[`orders/${id}`] = null;
+    }
+    await update(ref(db), updates);
+    alert('✅ All orders moved to completedOrders.');
+    if (currentView === 'orders') renderOrders();
+    if (currentView === 'history') renderHistory();
+  } catch (e) {
+    alert('❌ Failed to finalize: ' + e.message);
+  }
+};
+
 // Initial render
 renderOrders();
-
 </script>
 </body>
 </html>
