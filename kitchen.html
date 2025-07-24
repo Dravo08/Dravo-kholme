@@ -268,8 +268,26 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
       const newStatus = { ...(order.status || {}), kitchen: 'completed' };
       await update(ref(db, `orders/${key}`), { status: newStatus });
 
-      const done = newStatus.bar === 'completed' || newStatus.bar === 'cancelled';
-      if (!isKitchenOrder(order) || done) await moveToCompleted(key, order, newStatus);
+      // Check if order has any bar items
+      const hasBar = order.items.some(item => {
+        for (const k in menuData) {
+          if (menuData[k].name === item.name && menuData[k].type === 'bar') return true;
+        }
+        return false;
+      });
+
+      // Check if bar and kitchen statuses are done (completed or cancelled)
+      const isBarDone = newStatus.bar === 'completed' || newStatus.bar === 'cancelled';
+      const isKitchenDone = newStatus.kitchen === 'completed' || newStatus.kitchen === 'cancelled';
+
+      // Move order to completed only if:
+      // - no bar items exist, or
+      // - both bar and kitchen are done
+      if (!hasBar) {
+        await moveToCompleted(key, order, newStatus);
+      } else if (hasBar && isBarDone && isKitchenDone) {
+        await moveToCompleted(key, order, newStatus);
+      }
 
       renderOrders();
       if (currentView === 'history') renderHistory();
@@ -279,15 +297,26 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
       const newStatus = { ...(order.status || {}), kitchen: 'cancelled' };
       await update(ref(db, `orders/${key}`), { status: newStatus, note: 'Kitchen cancelled' });
 
+      // Check if order has any bar items
       const hasBar = order.items.some(item => {
         for (const k in menuData) {
           if (menuData[k].name === item.name && menuData[k].type === 'bar') return true;
         }
         return false;
       });
-      const isBarDone = newStatus.bar === 'completed' || newStatus.bar === 'cancelled';
 
-      if (!hasBar || isBarDone) await moveToCompleted(key, order, newStatus);
+      // Check if bar and kitchen statuses are done (completed or cancelled)
+      const isBarDone = newStatus.bar === 'completed' || newStatus.bar === 'cancelled';
+      const isKitchenDone = newStatus.kitchen === 'completed' || newStatus.kitchen === 'cancelled';
+
+      // Move order to completed only if:
+      // - no bar items exist, or
+      // - both bar and kitchen are done
+      if (!hasBar) {
+        await moveToCompleted(key, order, newStatus);
+      } else if (hasBar && isBarDone && isKitchenDone) {
+        await moveToCompleted(key, order, newStatus);
+      }
 
       renderOrders();
       if (currentView === 'history') renderHistory();
@@ -395,6 +424,7 @@ finalizeAllBtn.onclick = async () => {
     alert('❌ Failed to finalize: ' + e.message);
   }
 };
+
 renderOrders();
 </script>
 </body>
