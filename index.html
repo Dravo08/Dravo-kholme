@@ -737,9 +737,12 @@ searchBar.addEventListener('input', () => {
         }  
   
         // Prioritize status display: pending > processing > completed  
-        let hasPending = tableOrders.some(o => o.status === 'pending');  
-        let hasProcessing = tableOrders.some(o => o.status === 'processing');  
-        let hasCompleted = tableOrders.some(o => o.status === 'completed');  
+        let hasPending = tableOrders.some(o => o.status?.bar === 'pending' || o.status?.kitchen === 'pending');
+let hasProcessing = tableOrders.some(o => o.status?.bar === 'processing' || o.status?.kitchen === 'processing');
+let hasCompleted = tableOrders.some(o =>
+  (o.status?.bar === 'completed' || o.status?.bar === 'cancelled') &&
+  (o.status?.kitchen === 'completed' || o.status?.kitchen === 'cancelled')
+);
   
         statusContainer.style.display = 'flex';  
         if (hasPending) {  
