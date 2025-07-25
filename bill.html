@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cafe Kholme – Customer Bill</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      max-width: 400px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      color: #333;
+      box-sizing: border-box;
+    }
+
+    h2, h3 {
+      text-align: center;
+      margin: 0;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .input-group input,
+    .input-group button,
+    .input-group select {
+      flex: 1 1 100%;
+      padding: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    @media(min-width: 400px) {
+      .input-group input,
+      .input-group button,
+      .input-group select {
+        flex: 1;
+      }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      border-top: 1px solid #ccc;
+      border-bottom: 1px solid #ccc;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: #f5f5f5;
+    }
+
+    .total, .discounted {
+      text-align: right;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .note, .customer {
+      font-size: 14px;
+      margin-top: 8px;
+      font-style: italic;
+      word-wrap: break-word;
+    }
+
+    .thankyou {
+      text-align: center;
+      margin-top: 30px;
+      font-weight: bold;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      margin-top: 15px;
+      padding: 12px;
+      background: #6d4c41;
+      color: white;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    /* Print styles: hide inputs/buttons, set margins and table rules */
+    @media print {
+      .input-group, .btn { display: none; }
+      @page { margin: 10mm; }
+      tr, td, th { page-break-inside: avoid; }
+      thead { display: table-header-group; }
+
+      body {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Cafe Kholme</h2>
+  <h3>Customer Bill</h3>
+
+  <div class="input-group">
+    <input type="number" id="tableNumber" placeholder="Enter Table Number" />
+    <button class="btn" onclick="confirmTable()">Load Bill</button>
+  </div>
+
+  <div id="billContent" style="display:none">
+    <label for="customerNameInput" style="font-weight:bold; display:block; margin-top:10px;">
+      Customer Name (optional):
+    </label>
+    <input type="text" id="customerNameInput" placeholder="Enter customer name" />
+
+    <p class="customer"><strong>Customer:</strong> <span id="customerName">N/A</span></p>
+    <p><strong>Table:</strong> <span id="tableOut"></span></p>
+    <p><strong>Date:</strong> <span id="date"></span></p>
+    <p><strong>Time:</strong> <span id="time"></span></p>
+
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Qty</th><th>Total</th></tr>
+      </thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+
+    <p class="total" id="totalText">Total: Rs 0</p>
+
+    <div class="input-group">
+      <input type="number" id="discountInput" placeholder="Enter discount Rs" />
+      <button class="btn" onclick="applyDiscount()">Apply Discount</button>
+    </div>
+
+    <p class="discounted" id="discountedTotal" style="display:none"></p>
+    <p class="note" id="orderNote"></p>
+    <p class="thankyou">Thank you for visiting!</p>
+
+    <button class="btn" onclick="window.print()">🖨️ Print Bill</button>
+    <button class="btn" onclick="markAsPaid()">✅ Mark as Paid</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
+      authDomain: "kholme-menu1.firebaseapp.com",
+      databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
+      projectId: "kholme-menu1",
+      storageBucket: "kholme-menu1.appspot.com",
+      messagingSenderId: "434798935284",
+      appId: "1:434798935284:web:527ae90b4d4833a30ff2a1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let currentKey = null;
+    let currentOrder = null;
+    let currentTotal = 0;
+    let currentDiscount = 0;
+
+    async function confirmTable() {
+      const tableNumber = document.getElementById("tableNumber").value.trim();
+      if (!tableNumber) {
+        alert("Please enter table number");
+        return;
+      }
+
+      try {
+        const snapshot = await get(ref(db, "orders"));
+        const data = snapshot.val();
+
+        if (!data) {
+          alert("No orders found in database.");
+          return;
+        }
+
+        let found = false;
+
+        for (const key in data) {
+          const order = data[key];
+          // Check table number and allow if required sub-orders are completed
+          if (order.tableNumber == tableNumber) {
+            const hasBarItems = order.items && order.items.some(item => item.type === "bar");
+            const hasKitchenItems = order.items && order.items.some(item => item.type === "kitchen");
+            let readyToLoad = true;
+            if (hasBarItems && order.status?.bar !== "completed") {
+              readyToLoad = false;
+            }
+            if (hasKitchenItems && order.status?.kitchen !== "completed") {
+              readyToLoad = false;
+            }
+            if (readyToLoad) {
+              currentKey = key;
+              currentOrder = order;
+              displayBill(order);
+              found = true;
+              break;
+            }
+          }
+        }
+
+        if (!found) {
+          alert("No completed order found for this table.");
+          document.getElementById("billContent").style.display = "none";
+        }
+      } catch (error) {
+        alert("Error loading orders: " + error.message);
+      }
+    }
+
+    function displayBill(order) {
+      document.getElementById("billContent").style.display = "block";
+
+      const custNameInput = document.getElementById("customerNameInput");
+      custNameInput.value = order.customerName || "";
+
+      document.getElementById("customerName").textContent = custNameInput.value.trim() || "N/A";
+      custNameInput.oninput = () => {
+        document.getElementById("customerName").textContent = custNameInput.value.trim() || "N/A";
+      };
+
+      document.getElementById("tableOut").textContent = order.tableNumber || "";
+      const dateObj = new Date(order.timestamp || Date.now());
+      document.getElementById("date").textContent = dateObj.toLocaleDateString();
+      document.getElementById("time").textContent = dateObj.toLocaleTimeString();
+
+      const itemsBody = document.getElementById("itemsBody");
+      itemsBody.innerHTML = "";
+      currentTotal = 0;
+      currentDiscount = 0;
+
+      order.items.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        currentTotal += itemTotal;
+        itemsBody.innerHTML += `
+          <tr>
+            <td>${item.name}</td>
+            <td>${item.quantity}</td>
+            <td>Rs ${itemTotal}</td>
+          </tr>`;
+      });
+
+      document.getElementById("totalText").textContent = `Total: Rs ${currentTotal}`;
+      document.getElementById("discountInput").value = "";
+      document.getElementById("discountedTotal").style.display = "none";
+      document.getElementById("orderNote").textContent = "Note: " + (order.note || "N/A");
+    }
+
+    function applyDiscount() {
+      const discount = parseInt(document.getElementById("discountInput").value) || 0;
+      if (discount < 0) {
+        alert("Discount cannot be negative");
+        return;
+      }
+      if (discount > currentTotal) {
+        alert("Discount cannot be more than total");
+        return;
+      }
+      currentDiscount = discount;
+      const finalAmount = currentTotal - discount;
+      document.getElementById("discountedTotal").style.display = "block";
+      document.getElementById("discountedTotal").textContent = `Discounted Total: Rs ${finalAmount}`;
+    }
+
+    async function markAsPaid() {
+      if (!currentKey || !currentOrder) {
+        alert("No active order loaded");
+        return;
+      }
+
+      const custNameInput = document.getElementById("customerNameInput");
+      const customerNameVal = custNameInput.value.trim();
+
+      const updatedOrder = {
+        ...currentOrder,
+        customerName: customerNameVal || currentOrder.customerName || "N/A",
+        discountedTotal: currentTotal - currentDiscount,
+        discountApplied: currentDiscount,
+        status: { ...currentOrder.status, paid: true },
+        completedAt: Date.now(),
+      };
+
+      try {
+        await set(ref(db, `completedOrders/${currentKey}`), updatedOrder);
+        await remove(ref(db, `orders/${currentKey}`));
+        alert("Marked as paid and moved to completedOrders.");
+        window.location.reload();
+      } catch (error) {
+        alert("Error updating order: " + error.message);
+      }
+    }
+
+    window.confirmTable = confirmTable;
+    window.applyDiscount = applyDiscount;
+    window.markAsPaid = markAsPaid;
+  </script>
+</body>
+</html>
