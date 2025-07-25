@@ -394,6 +394,7 @@ function renderHistory() {
     snapshot.forEach(child => {
       const order = child.val();
       if (!Array.isArray(order.items)) return;
+      if (order.billingPending) return;  // Skip orders waiting for billing
       const filtered = filterItemsByType(order.items, 'bar');
       if (!filtered.length) return;
       const card = createOrderCard(child.key, order, filtered, true);
