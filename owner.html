@@ -653,7 +653,9 @@ function updateChart(labels, data, rawDates) {
         }
 
         if (orderDate === todayStr) {
-          todayTotal += price;
+  const billed = order.discountedTotal != null ? Number(order.discountedTotal) : price;
+  todayTotal += billed;
+
         }
       }
 
@@ -747,7 +749,9 @@ function getSimpleStatus(status) {
 
   // If status is an object (e.g., { kitchen: 'cancelled', bar: 'completed' })
   if (typeof status === 'object') {
-    const values = Object.values(status).map(val => (val || '').toLowerCase());
+    const values = Object.values(status).map(val => {
+  return typeof val === 'string' ? val.toLowerCase() : '';
+});
     if (values.includes('cancelled')) return 'Cancelled';
 
     // Only return 'Completed' if ALL statuses are completed
@@ -807,7 +811,8 @@ if (cancelled) {
     html += `<div class="order-entry ${statusClass}" tabindex="0">
       <h4>Order ID: ${key}</h4>
       <div class="order-details">
-        <strong>Date:</strong> ${formatDate(order.timestamp)}<br />
+  <strong>Date:</strong> ${formatDate(order.completedAt ?? order.timestamp)}<br />
+  ${order.customerName ? `<strong>Customer:</strong> ${order.customerName}<br />` : ''}
         <strong>Status:</strong> ${getSimpleStatus(order.status)}<br />
         <strong>Items:</strong><br />
         <ul>`;
@@ -823,7 +828,8 @@ if (cancelled) {
     }
 
     html += `</ul>
-        <strong>Total:</strong> Rs. ${orderTotal.toFixed(2)}
+        ${order.discountApplied != null ? `<strong>Discount:</strong> ${order.discountApplied}<br />` : ''}
+<strong>Total:</strong> Rs. ${(order.discountedTotal != null ? order.discountedTotal : orderTotal).toFixed(2)}
       </div>
     </div>`;
   });
@@ -840,9 +846,13 @@ async function loadAllOrders() {
     const snapshot = await get(ordersRef);
     const data = snapshot.val() || {};
     filteredOrders = data;
-
+    console.log("Loaded orders:", data);
     const today = new Date().toISOString().slice(0, 10);
-    renderOrders(data, today);
+    try {
+  renderOrders(data, today);
+} catch (err) {
+  console.error("Error rendering orders:", err);
+}
     filterDateInput.value = today;
     selectedDate = today;
   } catch (err) {
@@ -1074,9 +1084,10 @@ addMenuForm.addEventListener('submit', async e => {
         Object.values(data).forEach(order => {
           if (order.status === 'cancelled') return;
 
-          const orderDate = order.timestamp ? new Date(order.timestamp) : null;
-          if (!orderDate) return;
-          const dateStr = orderDate.toISOString().slice(0, 10);
+          const rawDate = order.completedAt ?? order.timestamp;
+const orderDate = rawDate ? new Date(rawDate) : null;
+if (!orderDate) return;
+const dateStr = orderDate.toISOString().slice(0, 10);
 
           let orderTotal = 0;
           if (Array.isArray(order.items)) {
