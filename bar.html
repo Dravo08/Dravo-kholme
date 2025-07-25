@@ -304,10 +304,6 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
 
       if (!hasKitchen) {
         await update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), bar: 'completed' } });
-      } else if (hasKitchen && isKitchenDone && isBarDone) {
-        await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, timestamp: Date.now() });
-        await remove(ref(db, `orders/${key}`));
-        delete ordersMap[key];
       }
       renderOrders();
       if (currentView === 'history') renderHistory();
@@ -462,4 +458,4 @@ renderOrders();
 </script>
 
 </body>
-</html>
+  </html>
