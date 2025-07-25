@@ -283,8 +283,6 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
       // - both bar and kitchen are done
       if (!hasBar) {
         await moveToCompleted(key, order, newStatus);
-      } else if (hasBar && isBarDone && isKitchenDone) {
-        await moveToCompleted(key, order, newStatus);
       }
 
       renderOrders();
@@ -360,7 +358,6 @@ function renderHistory() {
     snapshot.forEach(child => {
       const order = child.val();
       if (!Array.isArray(order.items)) return;
-      if (order.billingPending) return;  // Skip orders waiting for billing
       const filtered = filterItemsByType(order.items, 'kitchen');
       if (!filtered.length) return;
       const card = createOrderCard(child.key, order, filtered, true);
@@ -427,4 +424,4 @@ finalizeAllBtn.onclick = async () => {
 renderOrders();
 </script>
 </body>
-  </html>
+</html>
