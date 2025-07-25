@@ -303,9 +303,7 @@ function createOrderCard(key, order, filteredItems, isCompleted = false) {
       const isBarDone = newStatus.bar === 'completed' || newStatus.bar === 'cancelled';
 
       if (!hasKitchen) {
-        await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, timestamp: Date.now() });
-        await remove(ref(db, `orders/${key}`));
-        delete ordersMap[key];
+        await update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), bar: 'completed' } });
       } else if (hasKitchen && isKitchenDone && isBarDone) {
         await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, timestamp: Date.now() });
         await remove(ref(db, `orders/${key}`));
