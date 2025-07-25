@@ -204,9 +204,7 @@ function formatItems(items) {
 }
 
 async function moveToCompleted(key, order, newStatus) {
-  await set(ref(db, `completedOrders/${key}`), { ...order, status: newStatus, timestamp: Date.now() });
-  await remove(ref(db, `orders/${key}`));
-  delete ordersMap[key];
+  await update(ref(db, `orders/${key}`), { status: { ...(order.status || {}), kitchen: 'completed' } });
 }
 
 function createOrderCard(key, order, filteredItems, isCompleted = false) {
