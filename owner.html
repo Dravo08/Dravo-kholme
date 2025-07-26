@@ -813,7 +813,7 @@ if (cancelled) {
       <div class="order-details">
   <strong>Date:</strong> ${formatDate(order.completedAt ?? order.timestamp)}<br />
   ${order.customerName ? `<strong>Customer:</strong> ${order.customerName}<br />` : ''}
-        <strong>Status:</strong> ${getSimpleStatus(order.status)}<br />
+        <strong>Status:</strong> ${isCancelled(order.status) ? 'Cancelled' : 'Completed'}<br />
         <strong>Items:</strong><br />
         <ul>`;
 
