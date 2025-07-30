@@ -7,12 +7,23 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      max-width: 400px;
+      max-width: 420px;
       margin: 20px auto;
       padding: 20px;
       background: #fff;
       color: #333;
-      box-sizing: border-box;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    header img {
+      width: 80px;
+      margin-bottom: 10px;
     }
 
     h2, h3 {
@@ -47,7 +58,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 15px;
       border-top: 1px solid #ccc;
       border-bottom: 1px solid #ccc;
     }
@@ -60,7 +71,7 @@
     }
 
     th {
-      background-color: #f5f5f5;
+      background-color: #f9f9f9;
     }
 
     .total, .discounted {
@@ -78,7 +89,7 @@
 
     .thankyou {
       text-align: center;
-      margin-top: 30px;
+      margin-top: 25px;
       font-weight: bold;
     }
 
@@ -93,29 +104,34 @@
       font-size: 16px;
       cursor: pointer;
       border-radius: 5px;
-      box-sizing: border-box;
-      user-select: none;
     }
 
-    /* Print styles: hide inputs/buttons, set margins and table rules */
+    /* Print styles */
     @media print {
       .input-group, .btn { display: none; }
       @page { margin: 10mm; }
-      tr, td, th { page-break-inside: avoid; }
-      thead { display: table-header-group; }
-
       body {
         max-width: 100%;
         margin: 0;
         padding: 0;
+        box-shadow: none;
       }
+      header img {
+        display: block;
+        margin: 0 auto 5px;
+      }
+      tr, td, th { page-break-inside: avoid; }
+      thead { display: table-header-group; }
     }
   </style>
 </head>
 <body>
 
-  <h2>Cafe Kholme</h2>
-  <h3>Customer Bill</h3>
+  <header>
+    <img src="https://dravo08.github.io/Dravo-kholme/IMG_20250721_073902.png" alt="Cafe Logo" />
+    <h2>Cafe Kholme</h2>
+    <h3>Customer Bill</h3>
+  </header>
 
   <div class="input-group">
     <input type="number" id="tableNumber" placeholder="Enter Table Number" />
@@ -123,9 +139,7 @@
   </div>
 
   <div id="billContent" style="display:none">
-    <label for="customerNameInput" style="font-weight:bold; display:block; margin-top:10px;">
-      Customer Name (optional):
-    </label>
+    <label for="customerNameInput"><strong>Customer Name:</strong></label>
     <input type="text" id="customerNameInput" placeholder="Enter customer name" />
 
     <p class="customer"><strong>Customer:</strong> <span id="customerName">N/A</span></p>
@@ -148,6 +162,13 @@
     </div>
 
     <p class="discounted" id="discountedTotal" style="display:none"></p>
+    <p><strong>Payment Mode:</strong> <span id="paymentModeDisplay">N/A</span></p>
+    <label for="paymentMode"><strong>Select Payment Mode:</strong></label>
+    <select id="paymentMode">
+      <option value="Cash">Cash</option>
+      <option value="Online">Online</option>
+    </select>
+
     <p class="note" id="orderNote"></p>
     <p class="thankyou">Thank you for visiting!</p>
 
@@ -157,8 +178,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
@@ -174,14 +195,12 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
     const db = getDatabase(app);
     const auth = getAuth(app);
 
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    alert("You must be logged in to access billing.");
-    window.location.href = "bill-login.html"; // or your actual login page
-  } else {
-    console.log("Logged in as:", user.email);
-  }
-});
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        alert("You must be logged in to access billing.");
+        window.location.href = "bill-login.html";
+      }
+    });
 
     let currentKey = null;
     let currentOrder = null;
@@ -208,24 +227,19 @@ onAuthStateChanged(auth, (user) => {
 
         for (const key in data) {
           const order = data[key];
-          // Check table number and allow if required sub-orders are completed
-          if (order.tableNumber == tableNumber) {
-            const hasBarItems = order.items && order.items.some(item => item.type === "bar");
-            const hasKitchenItems = order.items && order.items.some(item => item.type === "kitchen");
-            let readyToLoad = true;
-            if (hasBarItems && order.status?.bar !== "completed") {
-              readyToLoad = false;
-            }
-            if (hasKitchenItems && order.status?.kitchen !== "completed") {
-              readyToLoad = false;
-            }
-            if (readyToLoad) {
-              currentKey = key;
-              currentOrder = order;
-              displayBill(order);
-              found = true;
-              break;
-            }
+          const hasBarItems = order.items && order.items.some(item => item.type === "bar");
+          const hasKitchenItems = order.items && order.items.some(item => item.type === "kitchen");
+
+          let readyToLoad = true;
+          if (hasBarItems && order.status?.bar !== "completed") readyToLoad = false;
+          if (hasKitchenItems && order.status?.kitchen !== "completed") readyToLoad = false;
+
+          if (order.tableNumber == tableNumber && readyToLoad) {
+            currentKey = key;
+            currentOrder = order;
+            displayBill(order);
+            found = true;
+            break;
           }
         }
 
@@ -240,9 +254,17 @@ onAuthStateChanged(auth, (user) => {
 
     function displayBill(order) {
       document.getElementById("billContent").style.display = "block";
-
       const custNameInput = document.getElementById("customerNameInput");
+      const paymentMode = document.getElementById("paymentMode");
+      const paymentModeDisplay = document.getElementById("paymentModeDisplay");
+
       custNameInput.value = order.customerName || "";
+      paymentMode.value = order.paymentMode || "Cash";
+      paymentModeDisplay.textContent = paymentMode.value;
+
+      paymentMode.onchange = () => {
+        paymentModeDisplay.textContent = paymentMode.value;
+      };
 
       document.getElementById("customerName").textContent = custNameInput.value.trim() || "N/A";
       custNameInput.oninput = () => {
@@ -259,15 +281,15 @@ onAuthStateChanged(auth, (user) => {
       currentTotal = 0;
       currentDiscount = 0;
 
+      if (!order.items || order.items.length === 0) {
+        itemsBody.innerHTML = "<tr><td colspan='3'>No items found.</td></tr>";
+        return;
+      }
+
       order.items.forEach(item => {
         const itemTotal = item.price * item.quantity;
         currentTotal += itemTotal;
-        itemsBody.innerHTML += `
-          <tr>
-            <td>${item.name}</td>
-            <td>${item.quantity}</td>
-            <td>Rs ${itemTotal}</td>
-          </tr>`;
+        itemsBody.innerHTML += `<tr><td>${item.name}</td><td>${item.quantity}</td><td>Rs ${itemTotal}</td></tr>`;
       });
 
       document.getElementById("totalText").textContent = `Total: Rs ${currentTotal}`;
@@ -278,18 +300,15 @@ onAuthStateChanged(auth, (user) => {
 
     function applyDiscount() {
       const discount = parseInt(document.getElementById("discountInput").value) || 0;
-      if (discount < 0) {
-        alert("Discount cannot be negative");
-        return;
-      }
-      if (discount > currentTotal) {
-        alert("Discount cannot be more than total");
+      if (discount < 0 || discount > currentTotal) {
+        alert("Invalid discount value.");
         return;
       }
       currentDiscount = discount;
       const finalAmount = currentTotal - discount;
-      document.getElementById("discountedTotal").style.display = "block";
-      document.getElementById("discountedTotal").textContent = `Discounted Total: Rs ${finalAmount}`;
+      const discountElem = document.getElementById("discountedTotal");
+      discountElem.style.display = "block";
+      discountElem.textContent = `Discounted Total: Rs ${finalAmount}`;
     }
 
     async function markAsPaid() {
@@ -298,14 +317,15 @@ onAuthStateChanged(auth, (user) => {
         return;
       }
 
-      const custNameInput = document.getElementById("customerNameInput");
-      const customerNameVal = custNameInput.value.trim();
+      const customerNameVal = document.getElementById("customerNameInput").value.trim();
+      const selectedPaymentMode = document.getElementById("paymentMode").value;
 
       const updatedOrder = {
         ...currentOrder,
         customerName: customerNameVal || currentOrder.customerName || "N/A",
         discountedTotal: currentTotal - currentDiscount,
         discountApplied: currentDiscount,
+        paymentMode: selectedPaymentMode,
         status: { ...currentOrder.status, paid: true },
         completedAt: Date.now(),
       };
