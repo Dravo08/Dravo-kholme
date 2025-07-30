@@ -737,7 +737,7 @@ function updateChart(labels, data, rawDates) {
 
       for (const id in orders) {
         const order = orders[id];
- iif (isCancelled(order.status)) continue;
+ if (isCancelled(order.status)) continue;
 
         const orderDate = new Date(order.timestamp || 0).toISOString().slice(0, 10);
         let price = 0;
