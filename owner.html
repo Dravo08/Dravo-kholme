@@ -14,7 +14,7 @@
   background-color: #111827; /* dark background */
   color: #e5e7eb; /* light text */
 }
-
+ 
 .nav-bar {
   position: fixed;
   bottom: 0;
@@ -364,8 +364,24 @@
   background: #fff; 
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
   width: 300px;">
-    <p id="sales-summary">Loading...</p>
+     <p id="sales-summary">Loading...</p>
+     <p id="expense-summary-top">Loading...</p>
+     <p id="net-summary-top">Loading...</p>
     </div></br>
+        <h5>Cash and Online Summary</h5>
+<div style="
+  border: 1px solid #ddd; 
+  border-radius: 8px; 
+  padding: 20px; 
+  background: #fff; 
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
+  width: 300px;">
+
+  
+  <p id="cash-available">Cash in Counter: Loading...</p>
+  <p id="online-available">Online in Bank: Loading...</p>
+</div>
+<br/>
     <h3>Top 3 Best Sellers</h3>
     <div style="
   border: 1px solid #ddd; 
@@ -430,11 +446,101 @@
     <div class="menu-grid" id="menu" aria-live="polite" aria-atomic="true"></div>
   </div>
 
-  <!-- Sales History Section -->
-  <div class="section" id="salesHistory">
-    <h2>Sales History</h2>
-    <div id="sales-history">Loading...</div>
+  <!-- Sales & Expense Calculator Section -->
+<div class="section" id="salesHistory">
+  <h2>Sales & Expense Calculator</h2>
+
+
+  <!-- Summary Card -->
+  <div style="
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    max-width: 400px;
+    margin-bottom: 20px;
+  ">
+    <p id="date-sales">Sales: Rs. 0.00</p>
+     <p id="expense-summary">Loading...</p>
+    <p id="net-summary">Loading...</p>
   </div>
+
+  <!-- Expense Entry Form -->
+  <h3>Add New Expense</h3>
+  <form id="expense-form" style="
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+    user-select: none;
+    max-width: 400px;
+    background: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  ">
+    <input type="number" id="expenseAmount" placeholder="Amount (Rs.)" required min="0" style="
+      flex: 1 1 150px;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    "/>
+    <select id="expenseType" required style="
+      flex: 1 1 150px;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    ">
+      <option value="" disabled selected>Select Type</option>
+      <option value="Ingredients">Ingredients</option>
+      <option value="Utilities">Utilities</option>
+    </select>
+    <input type="text" id="expenseDesc" placeholder="Description" style="
+      flex: 1 1 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    "/>
+    <div style="flex: 1 1 100%; display: flex; gap: 10px; align-items: center;">
+      <input type="radio" id="modeCash" name="expenseMode" value="Cash" checked />
+      <label for="modeCash">Cash</label>
+      <input type="radio" id="modeOnline" name="expenseMode" value="Online" />
+      <label for="modeOnline">Online</label>
+    </div>
+    <button type="submit" style="
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      flex: 0 0 auto;
+      font-weight: 700;
+    ">Add Expense</button>
+  </form>
+
+  <!-- Expense Breakdown Chart -->
+  <h3>Expense Breakdown</h3>
+  <div style="
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    max-width: 400px;
+  ">
+    <canvas id="expenseChart" aria-label="Expense Breakdown Pie Chart" role="img" style="width: 100%; height: 200px;"></canvas>
+  </div>
+</div>
+
   
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <!-- Navigation Bar -->
@@ -500,9 +606,9 @@
     <span>Add</span>
   </button>
   <button class="nav-button" data-section="salesHistory" aria-pressed="false">
-    <span class="material-icons-round nav-icon">calendar_month</span>
-    <span>History</span>
-  </button>
+  <span class="material-icons-round nav-icon">paid</span>
+  <span>Expenses</span>
+</button>
   <button class="nav-button" id="logoutBtn">
     <span class="material-icons-round nav-icon">logout</span>
     <span>Logout</span>
@@ -631,7 +737,7 @@ function updateChart(labels, data, rawDates) {
 
       for (const id in orders) {
         const order = orders[id];
- if (isCancelled(order.status)) continue;
+ iif (isCancelled(order.status)) continue;
 
         const orderDate = new Date(order.timestamp || 0).toISOString().slice(0, 10);
         let price = 0;
@@ -813,7 +919,7 @@ if (cancelled) {
       <div class="order-details">
   <strong>Date:</strong> ${formatDate(order.completedAt ?? order.timestamp)}<br />
   ${order.customerName ? `<strong>Customer:</strong> ${order.customerName}<br />` : ''}
-        <strong>Status:</strong> ${isCancelled(order.status) ? 'Cancelled' : 'Completed'}<br />
+        <strong>Status:</strong> ${getSimpleStatus(order.status)}<br />
         <strong>Items:</strong><br />
         <ul>`;
 
@@ -837,7 +943,7 @@ if (cancelled) {
   ordersContainer.innerHTML = html || `<p>No orders found for ${targetDate}.</p>`;
   ordersCountEl.innerText = `Completed Orders: ${completedCount}`;
  cancelledCountEl.innerText = `Cancelled Orders: ${cancelledCount}`;
-  deleteOrdersDayBtn.disabled = completedCount === 0;
+  deleteOrdersDayBtn.disabled = (completedCount + cancelledCount) === 0;
 }
 
 // Load all orders once
@@ -889,33 +995,46 @@ clearFilterBtn.addEventListener('click', () => {
   renderOrders(filteredOrders, today);
 });
 
-// Delete all completed orders of selected day
 deleteOrdersDayBtn.addEventListener('click', async () => {
   if (!selectedDate) {
     alert('Select a date first.');
     return;
   }
-  if (!confirm(`Are you sure you want to delete ALL completed orders of ${selectedDate}? This action cannot be undone.`)) return;
+
+  if (!confirm(`Are you sure you want to delete ALL orders and download history of ${selectedDate}? This action cannot be undone.`)) return;
 
   try {
-    const snapshot = await get(ordersRef);
+    const snapshot = await get(ref(db, 'completedOrders'));
     const data = snapshot.val() || {};
 
     const updates = {};
+
+    // 🔥 Delete all orders (cancelled or not) for selected date
     Object.entries(data).forEach(([key, order]) => {
-      const orderDate = order.timestamp ? new Date(order.timestamp).toISOString().slice(0, 10) : '';
-      if (orderDate === selectedDate && order.status !== 'cancelled') {
-        updates[key] = null;
-      }
+      const orderDate = order.timestamp
+        ? new Date(order.timestamp).toISOString().slice(0, 10)
+        : '';
+      if (orderDate === selectedDate) {
+  updates[`completedOrders/${key}`] = null;
+  updates[`orders/${key}`] = null;
+}
     });
 
-    await update(ref(db, 'completedOrders'), updates);
-    alert(`Deleted completed orders on ${selectedDate}`);
+    // 🔥 Also delete download history for selectedDate
+    updates[`downloadHistory/${selectedDate}`] = null;
+
+    // ✅ Apply all deletions at once
+    await update(ref(db), updates);
+
+    alert(`Deleted all orders and download history for ${selectedDate}`);
+
+    // 🔄 Reload and refresh UI
     await loadAllOrders();
     renderOrders(filteredOrders, selectedDate);
+    
   } catch (err) {
-    console.error('Error deleting orders:', err);
-    alert('Failed to delete orders.');
+    console.error('Error deleting orders or history:', err);
+    alert('Failed to delete data.');
   }
 });
 
@@ -1068,77 +1187,144 @@ addMenuForm.addEventListener('submit', async e => {
 
     // ====== SALES HISTORY SECTION LOGIC ======
 
-    const salesHistoryContainer = document.getElementById('sales-history');
+  
+ 
+  loadChartData();
+  
+  loadMenuItems();
 
-    async function loadSalesHistory() {
-      try {
-        const snapshot = await get(ordersRef);
-        const data = snapshot.val() || {};
-        if (Object.keys(data).length === 0) {
-          salesHistoryContainer.innerHTML = '<p>No sales history available.</p>';
-          return;
-        }
+  // === Sales & Expense Calculator ===
+  const expenseForm = document.getElementById('expense-form');
+  const amountInput = document.getElementById('expenseAmount');
+  const typeInput = document.getElementById('expenseType');
+  const descInput = document.getElementById('expenseDesc');
+  const modeInputs = document.getElementsByName('expenseMode');
 
-        const history = {};
+  const salesText = document.getElementById('date-sales');
+  const expenseSummary = document.getElementById('expense-summary');
+  const netSummary = document.getElementById('net-summary');
 
-        Object.values(data).forEach(order => {
-          if (order.status === 'cancelled') return;
+  const cashAvailable = document.getElementById('cash-available'); // if exists
+const expenseSummaryTop = document.getElementById('expense-summary-top');
+const netSummaryTop = document.getElementById('net-summary-top');
+  const expenseChartCanvas = document.getElementById('expenseChart');
+  let expenseChart;
 
-          const rawDate = order.completedAt ?? order.timestamp;
-const orderDate = rawDate ? new Date(rawDate) : null;
-if (!orderDate) return;
-const dateStr = orderDate.toISOString().slice(0, 10);
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
 
-          let orderTotal = 0;
-          if (Array.isArray(order.items)) {
-            order.items.forEach(i => {
-              orderTotal += (Number(i.quantity) || 1) * (Number(i.price) || 0);
-            });
-          } else {
-            orderTotal = (Number(order.quantity) || 1) * (Number(order.price) || 0);
-          }
+  expenseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(amountInput.value);
+    const type = typeInput.value;
+    const description = descInput.value;
+    const mode = [...modeInputs].find(r => r.checked).value;
 
-          if (!history[dateStr]) {
-            history[dateStr] = 0;
-          }
-          history[dateStr] += orderTotal;
-        });
+    if (!amount || !type || !mode) return;
 
-        // Sort by date descending
-        const sortedDates = Object.keys(history).sort((a, b) => new Date(b) - new Date(a));
+    const newExpense = { amount, type, desc: description, mode };
+    await push(ref(db, 'expenses/' + todayKey()), newExpense);
 
-        let html = `<table style="width:100%; border-collapse: collapse;" aria-label="Sales history table">
-          <thead>
-            <tr>
-              <th style="border-bottom: 1px solid #ccc; padding: 8px; text-align: left;">Date</th>
-              <th style="border-bottom: 1px solid #ccc; padding: 8px; text-align: right;">Total Sales (Rs.)</th>
-            </tr>
-          </thead>
-          <tbody>`;
+    expenseForm.reset();
+    modeInputs[0].checked = true;
+  });
 
-        sortedDates.forEach(date => {
-          html += `
-            <tr>
-              <td style="padding: 8px; border-bottom: 1px solid #eee;">${date}</td>
-              <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${history[date].toFixed(2)}</td>
-            </tr>`;
-        });
+async function updateExpenseTotals() {
+  const date = todayKey();
+  const snapshot = await get(ordersRef);
+  const data = snapshot.val() || {};
 
-        html += '</tbody></table>';
+  let totalSales = 0;
+  let salesCash = 0;
+  let salesOnline = 0;
 
-        salesHistoryContainer.innerHTML = html;
-      } catch (error) {
-        salesHistoryContainer.innerHTML = '<p>Error loading sales history.</p>';
-        console.error('Sales history load error:', error);
-      }
+  for (const key in data) {
+    const order = data[key];
+    if (isCancelled(order.status)) continue;
+
+    const rawDate = order.completedAt ?? order.timestamp;
+    const orderDate = rawDate ? new Date(rawDate) : null;
+    if (!orderDate) continue;
+    const dateStr = orderDate.toISOString().slice(0, 10);
+    if (dateStr !== date) continue;
+
+    let orderTotal = 0;
+    if (Array.isArray(order.items)) {
+      order.items.forEach(i => {
+        orderTotal += (Number(i.quantity) || 1) * (Number(i.price) || 0);
+      });
+    } else {
+      orderTotal = (Number(order.quantity) || 1) * (Number(order.price) || 0);
     }
 
-    // INITIAL LOADS
-    loadChartData();
-    loadAllOrders();
-    loadMenuItems();
+    totalSales += orderTotal;
 
-  </script>
+    // ✅ Check order.paymentMode instead of assuming everything is cash
+    if (order.paymentMode === 'Cash') {
+      salesCash += orderTotal;
+    } else if (order.paymentMode === 'Online') {
+      salesOnline += orderTotal;
+    }
+  }
+
+  const expenseSnap = await get(ref(db, 'expenses/' + date));
+  const expenses = expenseSnap.val() || {};
+  let expenseCash = 0, expenseOnline = 0, totalExpense = 0;
+  const typeTotals = {};
+
+  Object.values(expenses).forEach(exp => {
+    const amt = Number(exp.amount) || 0;
+    totalExpense += amt;
+    if (exp.mode === 'Cash') expenseCash += amt;
+    else expenseOnline += amt;
+    typeTotals[exp.type] = (typeTotals[exp.type] || 0) + amt;
+  });
+
+  salesText.innerText = `Sales: Rs. ${totalSales.toFixed(2)}`;
+  expenseSummary.innerText = `Expenses: Rs. ${totalExpense.toFixed(2)}`;
+netSummary.innerText = `Net Total: Rs. ${(totalSales - totalExpense).toFixed(2)}`;
+if (expenseSummaryTop) expenseSummaryTop.innerText = `Expenses: Rs. ${totalExpense.toFixed(2)}`;
+if (netSummaryTop) netSummaryTop.innerText = `Net Total: Rs. ${(totalSales - totalExpense).toFixed(2)}`; 
+
+  if (cashAvailable) {
+    cashAvailable.innerText = `Cash Available: Rs. ${(salesCash - expenseCash).toFixed(2)}`;
+  }
+ 
+  const onlineAvailable = document.getElementById('online-available');
+  if (onlineAvailable) {
+    onlineAvailable.innerText = `Online in Bank: Rs. ${(salesOnline - expenseOnline).toFixed(2)}`;
+  }
+
+  const labels = Object.keys(typeTotals);
+  const dataArr = Object.values(typeTotals);
+  const colors = ['#4e342e', '#8bc34a', '#2196f3', '#ffc107', '#e91e63'];
+
+  if (expenseChart) expenseChart.destroy();
+  expenseChart = new Chart(expenseChartCanvas.getContext('2d'), {
+    type: 'pie',
+    data: {
+      labels,
+      datasets: [{
+        data: dataArr,
+        backgroundColor: colors.slice(0, labels.length),
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        title: { display: true, text: 'Expenses by Type' }
+      }
+    }
+  });
+  }
+  
+
+  window.addEventListener('DOMContentLoaded', () => {
+    updateExpenseTotals();
+    onValue(ref(db, 'expenses/' + todayKey()), updateExpenseTotals);
+  });
+</script>
 </body>
 </html>
- 
