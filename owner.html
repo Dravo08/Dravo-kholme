@@ -356,17 +356,19 @@
 
   <!-- Sales Section -->
   <div class="section active" id="totalSales">
-    <h2>Today's Total Sales</h2>
-    <div style="
+  
+  <h2>Today's Total Sales</h2>
+    <div id="print-area" style="
   border: 1px solid #ddd; 
   border-radius: 8px; 
   padding: 20px; 
   background: #fff; 
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
   width: 300px;">
-     <p id="sales-summary">Loading...</p>
+     <p id="date-sales">Loading...</p>
      <p id="expense-summary-top">Loading...</p>
      <p id="net-summary-top">Loading...</p>
+     <p id="liability-summary">Loading...</p> 
     </div></br>
         <h5>Cash and Online Summary</h5>
 <div style="
@@ -413,7 +415,8 @@
     style="width: 100%; max-width: 100%; height: 200px; display: block; margin: 0 auto;">
   </canvas>
 
-</div> </div>    
+</div> <button onclick="printSalesReport()">🖨️ Print Sales Report</button></div> 
+   
   <!-- Order History Section -->
   <div class="section" id="orderHistory">
     <h2> Order History (Filtered)</h2>
@@ -461,7 +464,6 @@
     max-width: 400px;
     margin-bottom: 20px;
   ">
-    <p id="date-sales">Sales: Rs. 0.00</p>
      <p id="expense-summary">Loading...</p>
     <p id="net-summary">Loading...</p>
   </div>
@@ -774,57 +776,74 @@ function updateChart(labels, data, rawDates) {
       salesSummaryEl.innerText = `Rs. ${todayTotal.toFixed(2)}`;
     }
 
-    async function loadChartData() {
-      try {
-        const snapshot = await get(ordersRef);
-        const data = snapshot.val() || {};
-        const summary = {};
-        const rawDates = [];
-        const now = new Date();
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date(now);
-          date.setDate(now.getDate() - i);
-          const iso = date.toISOString().slice(0, 10);
-          const label = weekdayNames[date.getDay()];
-          summary[label] = 0;
-          rawDates.push(iso);
-        }
+  async function loadChartData() {
+  try {
+    const snapshot = await get(ordersRef);
+    const data = snapshot.val() || {};
+    const summary = {};
+    const rawDates = [];
+    const now = new Date();
+    let totalLiability = 0; // ✅ Define the variable
 
-        // Accumulate sales per day
-        for (const key in data) {
-          const order = data[key];
-          if (isCancelled(order.status)) continue;
-          const orderDate = order.timestamp ? new Date(order.timestamp).toISOString().slice(0, 10) : null;
-          if (!orderDate || !rawDates.includes(orderDate)) continue;
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i);
+      const iso = date.toISOString().slice(0, 10);
+      const label = weekdayNames[date.getDay()];
+      summary[label] = 0;
+      rawDates.push(iso);
+    }
 
-          let orderTotal = 0;
-          if (Array.isArray(order.items)) {
-            order.items.forEach(i => {
-              const qty = Number(i.quantity) || 1;
-              const price = Number(i.price) || 0;
-              orderTotal += qty * price;
-            });
-        } else {
-            orderTotal = (Number(order.quantity) || 1) * (Number(order.price) || 0);
-          }
+    // ✅ Correct single loop (just one loop, not duplicated)
+    for (const key in data) {
+      const order = data[key];
+      if (isCancelled(order.status)) continue;
+      const orderDate = order.timestamp ? new Date(order.timestamp).toISOString().slice(0, 10) : null;
+      if (!orderDate || !rawDates.includes(orderDate)) continue;
 
-          // Add to the corresponding day label
-          const dayLabel = weekdayNames[new Date(orderDate).getDay()];
-          if (dayLabel in summary) summary[dayLabel] += orderTotal;
-        }
+      let orderTotal = 0;
+      if (Array.isArray(order.items)) {
+        order.items.forEach(i => {
+          const qty = Number(i.quantity) || 1;
+          const price = Number(i.price) || 0;
+          orderTotal += qty * price;
+        });
+      } else {
+        orderTotal = (Number(order.quantity) || 1) * (Number(order.price) || 0);
+      }
 
-        // Prepare data for chart
-        const labels = Object.keys(summary);
-        const totals = Object.values(summary);
+      // ✅ Add to chart summary
+      const dayLabel = weekdayNames[new Date(orderDate).getDay()];
+      if (dayLabel in summary) summary[dayLabel] += orderTotal;
 
-        updateChart(labels, totals, rawDates);
-        getBestSellingItem(data);
-      } catch (error) {
-        console.error('Error loading sales data:', error);
-        salesSummaryEl.innerText = 'Error loading sales data.';
-        bestSellerEl.innerHTML = '<tr><td colspan="3">Error loading data.</td></tr>';
+      // ✅ Add to liability total
+      const mode = typeof order.paymentMode === 'string'
+        ? order.paymentMode
+        : order.paymentMode?.mode;
+
+      if (mode === 'Liability') {
+        totalLiability += orderTotal;
       }
     }
+
+    // ✅ Update chart
+    const labels = Object.keys(summary);
+    const totals = Object.values(summary);
+    updateChart(labels, totals, rawDates);
+
+    // ✅ Show liability in DOM
+    const liabilitySummary = document.getElementById('liability-summary');
+if (liabilitySummary) {
+  liabilitySummary.innerText = `Liabilities (Credit): Rs. ${totalLiability.toFixed(2)}`;
+}
+
+    getBestSellingItem(data);
+  } catch (error) {
+    console.error('Error loading sales data:', error);
+    salesSummaryEl.innerText = 'Error loading sales data.';
+    bestSellerEl.innerHTML = '<tr><td colspan="3">Error loading data.</td></tr>';
+  }
+}
 
     // ====== ORDER HISTORY SECTION LOGIC ======
 
@@ -1186,58 +1205,55 @@ addMenuForm.addEventListener('submit', async e => {
 
 
     // ====== SALES HISTORY SECTION LOGIC ======
+loadChartData();
+loadMenuItems();
 
-  
- 
-  loadChartData();
-  
-  loadMenuItems();
+// === Sales & Expense Calculator ===
+const expenseForm = document.getElementById('expense-form');
+const amountInput = document.getElementById('expenseAmount');
+const typeInput = document.getElementById('expenseType');
+const descInput = document.getElementById('expenseDesc');
+const modeInputs = document.getElementsByName('expenseMode');
 
-  // === Sales & Expense Calculator ===
-  const expenseForm = document.getElementById('expense-form');
-  const amountInput = document.getElementById('expenseAmount');
-  const typeInput = document.getElementById('expenseType');
-  const descInput = document.getElementById('expenseDesc');
-  const modeInputs = document.getElementsByName('expenseMode');
-
-  const salesText = document.getElementById('date-sales');
-  const expenseSummary = document.getElementById('expense-summary');
-  const netSummary = document.getElementById('net-summary');
-
-  const cashAvailable = document.getElementById('cash-available'); // if exists
+const salesText = document.getElementById('date-sales');
+const expenseSummary = document.getElementById('expense-summary');
+const netSummary = document.getElementById('net-summary');
+const cashAvailable = document.getElementById('cash-available');
+const onlineAvailable = document.getElementById('online-available');
 const expenseSummaryTop = document.getElementById('expense-summary-top');
 const netSummaryTop = document.getElementById('net-summary-top');
-  const expenseChartCanvas = document.getElementById('expenseChart');
-  let expenseChart;
+const expenseChartCanvas = document.getElementById('expenseChart');
+let expenseChart;
 
-  function todayKey() {
-    return new Date().toISOString().slice(0, 10);
-  }
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
 
-  expenseForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const amount = parseFloat(amountInput.value);
-    const type = typeInput.value;
-    const description = descInput.value;
-    const mode = [...modeInputs].find(r => r.checked).value;
+expenseForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const amount = parseFloat(amountInput.value);
+  const type = typeInput.value;
+  const description = descInput.value;
+  const mode = [...modeInputs].find(r => r.checked)?.value;
 
-    if (!amount || !type || !mode) return;
+  if (!amount || !type || !mode) return;
 
-    const newExpense = { amount, type, desc: description, mode };
-    await push(ref(db, 'expenses/' + todayKey()), newExpense);
+  const newExpense = { amount, type, desc: description, mode };
+  await push(ref(db, 'expenses/' + todayKey()), newExpense);
 
-    expenseForm.reset();
-    modeInputs[0].checked = true;
-  });
+  expenseForm.reset();
+  modeInputs[0].checked = true;
+});
 
 async function updateExpenseTotals() {
   const date = todayKey();
-  const snapshot = await get(ordersRef);
+  const snapshot = await get(ref(db, 'completedOrders'));
   const data = snapshot.val() || {};
 
   let totalSales = 0;
   let salesCash = 0;
   let salesOnline = 0;
+  let totalLiability = 0;
 
   for (const key in data) {
     const order = data[key];
@@ -1246,8 +1262,7 @@ async function updateExpenseTotals() {
     const rawDate = order.completedAt ?? order.timestamp;
     const orderDate = rawDate ? new Date(rawDate) : null;
     if (!orderDate) continue;
-    const dateStr = orderDate.toISOString().slice(0, 10);
-    if (dateStr !== date) continue;
+    if (orderDate.toISOString().slice(0, 10) !== date) continue;
 
     let orderTotal = 0;
     if (Array.isArray(order.items)) {
@@ -1258,14 +1273,24 @@ async function updateExpenseTotals() {
       orderTotal = (Number(order.quantity) || 1) * (Number(order.price) || 0);
     }
 
-    totalSales += orderTotal;
+    const mode = typeof order.paymentMode === 'string'
+      ? order.paymentMode
+      : order.paymentMode?.mode;
 
-    // ✅ Check order.paymentMode instead of assuming everything is cash
-    if (order.paymentMode === 'Cash') {
+    if (mode === 'Cash') {
       salesCash += orderTotal;
-    } else if (order.paymentMode === 'Online') {
+    } else if (mode === 'Online') {
       salesOnline += orderTotal;
+    } else if (mode === 'Split') {
+      const cashAmt = Number(order.paymentMode.cashAmount || 0);
+      const onlineAmt = Number(order.paymentMode.onlineAmount || 0);
+      salesCash += cashAmt;
+      salesOnline += onlineAmt;
+    } else if (mode === 'Liability') {
+      totalLiability += orderTotal;
     }
+
+    totalSales += orderTotal;
   }
 
   const expenseSnap = await get(ref(db, 'expenses/' + date));
@@ -1281,24 +1306,22 @@ async function updateExpenseTotals() {
     typeTotals[exp.type] = (typeTotals[exp.type] || 0) + amt;
   });
 
+  const netTotal = totalSales - totalExpense;
+  const cashNet = salesCash - expenseCash;
+  const onlineNet = salesOnline - expenseOnline;
+
   salesText.innerText = `Sales: Rs. ${totalSales.toFixed(2)}`;
   expenseSummary.innerText = `Expenses: Rs. ${totalExpense.toFixed(2)}`;
-netSummary.innerText = `Net Total: Rs. ${(totalSales - totalExpense).toFixed(2)}`;
-if (expenseSummaryTop) expenseSummaryTop.innerText = `Expenses: Rs. ${totalExpense.toFixed(2)}`;
-if (netSummaryTop) netSummaryTop.innerText = `Net Total: Rs. ${(totalSales - totalExpense).toFixed(2)}`; 
+  netSummary.innerText = `Net Total: Rs. ${netTotal.toFixed(2)}`;
+  if (cashAvailable) cashAvailable.innerText = `Cash Available: Rs. ${cashNet.toFixed(2)}`;
+  if (onlineAvailable) onlineAvailable.innerText = `Online in Bank: Rs. ${onlineNet.toFixed(2)}`;
+  if (expenseSummaryTop) expenseSummaryTop.innerText = `Expenses: Rs. ${totalExpense.toFixed(2)}`;
+  if (netSummaryTop) netSummaryTop.innerText = `Net Total: Rs. ${netTotal.toFixed(2)}`;
 
-  if (cashAvailable) {
-    cashAvailable.innerText = `Cash Available: Rs. ${(salesCash - expenseCash).toFixed(2)}`;
-  }
- 
-  const onlineAvailable = document.getElementById('online-available');
-  if (onlineAvailable) {
-    onlineAvailable.innerText = `Online in Bank: Rs. ${(salesOnline - expenseOnline).toFixed(2)}`;
-  }
-
+  // Pie Chart
   const labels = Object.keys(typeTotals);
   const dataArr = Object.values(typeTotals);
-  const colors = ['#4e342e', '#8bc34a', '#2196f3', '#ffc107', '#e91e63'];
+  const colors = ['#4e342e', '#8bc34a', '#2196f3', '#ffc107', '#e91e63', '#00bcd4'];
 
   if (expenseChart) expenseChart.destroy();
   expenseChart = new Chart(expenseChartCanvas.getContext('2d'), {
@@ -1318,13 +1341,46 @@ if (netSummaryTop) netSummaryTop.innerText = `Net Total: Rs. ${(totalSales - tot
       }
     }
   });
-  }
-  
+}
 
-  window.addEventListener('DOMContentLoaded', () => {
-    updateExpenseTotals();
-    onValue(ref(db, 'expenses/' + todayKey()), updateExpenseTotals);
-  });
+window.addEventListener('DOMContentLoaded', () => {
+  updateExpenseTotals();
+  onValue(ref(db, 'expenses/' + todayKey()), updateExpenseTotals);
+  onValue(ref(db, 'completedOrders'), updateExpenseTotals);
+const liabilitySummary = document.getElementById('liability-summary');
+if (liabilitySummary) {
+  liabilitySummary.innerText = `Liabilities (Credit): Rs. ${totalLiability.toFixed(2)}`;
+}
+window.printSalesReport = function () {
+  const printContent = document.getElementById('print-area');
+  if (!printContent) {
+    alert("Print content not found.");
+    return;
+  }
+
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <html>
+      <head>
+        <title>Sales Report</title>
+        <style>
+          body { font-family: 'Segoe UI', sans-serif; padding: 20px; }
+          h2 { color: #4e342e; }
+          p { margin-bottom: 10px; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <h2>Cafe Kholmay – Daily Sales Report</h2>
+        ${printContent.innerHTML}
+        <p style="margin-top:40px;">Printed on: ${new Date().toLocaleString()}</p>
+      </body>
+    </html>
+  `);
+  win.document.close();
+  win.print();
+}
+});
+
 </script>
 </body>
 </html>
