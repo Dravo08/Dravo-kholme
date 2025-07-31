@@ -15,29 +15,24 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       border-radius: 8px;
     }
-
     header {
       text-align: center;
       margin-bottom: 15px;
     }
-
     header img {
       width: 80px;
       margin-bottom: 10px;
     }
-
     h2, h3 {
       text-align: center;
       margin: 0;
     }
-
     .input-group {
       display: flex;
       gap: 10px;
       margin: 20px 0;
       flex-wrap: wrap;
     }
-
     .input-group input,
     .input-group button,
     .input-group select {
@@ -46,7 +41,6 @@
       font-size: 16px;
       box-sizing: border-box;
     }
-
     @media(min-width: 400px) {
       .input-group input,
       .input-group button,
@@ -54,7 +48,6 @@
         flex: 1;
       }
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -62,37 +55,31 @@
       border-top: 1px solid #ccc;
       border-bottom: 1px solid #ccc;
     }
-
     th, td {
       text-align: left;
       padding: 8px;
       border-bottom: 1px solid #ccc;
       font-size: 14px;
     }
-
     th {
       background-color: #f9f9f9;
     }
-
     .total, .discounted {
       text-align: right;
       font-weight: bold;
       margin-top: 10px;
     }
-
     .note, .customer {
       font-size: 14px;
       margin-top: 8px;
       font-style: italic;
       word-wrap: break-word;
     }
-
     .thankyou {
       text-align: center;
       margin-top: 25px;
       font-weight: bold;
     }
-
     .btn {
       display: block;
       width: 100%;
@@ -105,10 +92,8 @@
       cursor: pointer;
       border-radius: 5px;
     }
-
-    /* Print styles */
     @media print {
-      .input-group, .btn { display: none; }
+      .input-group, .btn, #splitFields { display: none; }
       @page { margin: 10mm; }
       body {
         max-width: 100%;
@@ -162,12 +147,20 @@
     </div>
 
     <p class="discounted" id="discountedTotal" style="display:none"></p>
+
     <p><strong>Payment Mode:</strong> <span id="paymentModeDisplay">N/A</span></p>
     <label for="paymentMode"><strong>Select Payment Mode:</strong></label>
     <select id="paymentMode">
       <option value="Cash">Cash</option>
       <option value="Online">Online</option>
+      <option value="Split">Split (Cash + Online)</option>
+      <option value="Liability">Liability (Not Paid)</option>
     </select>
+
+    <div id="splitFields" style="display: none; margin-top: 10px;">
+      <input type="number" id="cashAmount" placeholder="Cash Amount (Rs)" />
+      <input type="number" id="onlineAmount" placeholder="Online Amount (Rs)" />
+    </div>
 
     <p class="note" id="orderNote"></p>
     <p class="thankyou">Thank you for visiting!</p>
@@ -257,13 +250,16 @@
       const custNameInput = document.getElementById("customerNameInput");
       const paymentMode = document.getElementById("paymentMode");
       const paymentModeDisplay = document.getElementById("paymentModeDisplay");
+      const splitFields = document.getElementById("splitFields");
 
       custNameInput.value = order.customerName || "";
-      paymentMode.value = order.paymentMode || "Cash";
+      paymentMode.value = order.paymentMode?.mode || "Cash";
       paymentModeDisplay.textContent = paymentMode.value;
+      splitFields.style.display = paymentMode.value === "Split" ? "block" : "none";
 
       paymentMode.onchange = () => {
         paymentModeDisplay.textContent = paymentMode.value;
+        splitFields.style.display = paymentMode.value === "Split" ? "block" : "none";
       };
 
       document.getElementById("customerName").textContent = custNameInput.value.trim() || "N/A";
@@ -319,14 +315,41 @@
 
       const customerNameVal = document.getElementById("customerNameInput").value.trim();
       const selectedPaymentMode = document.getElementById("paymentMode").value;
+      let paymentDetails = {};
+      let discountedTotal = currentTotal - currentDiscount;
+
+      if (selectedPaymentMode === "Split") {
+        const cash = parseInt(document.getElementById("cashAmount").value) || 0;
+        const online = parseInt(document.getElementById("onlineAmount").value) || 0;
+        if (cash + online !== discountedTotal) {
+          alert(`Split total (Cash + Online) must equal: Rs ${discountedTotal}`);
+          return;
+        }
+        paymentDetails = {
+          mode: "Split",
+          cashAmount: cash,
+          onlineAmount: online
+        };
+      } else if (selectedPaymentMode === "Liability") {
+        paymentDetails = {
+          mode: "Liability",
+          received: false
+        };
+        discountedTotal = 0;
+      } else {
+        paymentDetails = {
+          mode: selectedPaymentMode,
+          received: true
+        };
+      }
 
       const updatedOrder = {
         ...currentOrder,
         customerName: customerNameVal || currentOrder.customerName || "N/A",
-        discountedTotal: currentTotal - currentDiscount,
+        discountedTotal,
         discountApplied: currentDiscount,
-        paymentMode: selectedPaymentMode,
-        status: { ...currentOrder.status, paid: true },
+        paymentMode: paymentDetails,
+        status: { ...currentOrder.status, paid: selectedPaymentMode !== "Liability" },
         completedAt: Date.now(),
       };
 
