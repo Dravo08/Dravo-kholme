@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cafe Kholme – Customer Bill</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      max-width: 420px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      color: #333;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    header img {
+      width: 80px;
+      margin-bottom: 10px;
+    }
+    h2, h3 {
+      text-align: center;
+      margin: 0;
+    }
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+    .input-group input,
+    .input-group button,
+    .input-group select {
+      flex: 1 1 100%;
+      padding: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    @media(min-width: 400px) {
+      .input-group input,
+      .input-group button,
+      .input-group select {
+        flex: 1;
+      }
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      border-top: 1px solid #ccc;
+      border-bottom: 1px solid #ccc;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #ccc;
+      font-size: 14px;
+    }
+    th {
+      background-color: #f9f9f9;
+    }
+    .total, .discounted {
+      text-align: right;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .note, .customer {
+      font-size: 14px;
+      margin-top: 8px;
+      font-style: italic;
+      word-wrap: break-word;
+    }
+    .thankyou {
+      text-align: center;
+      margin-top: 25px;
+      font-weight: bold;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      margin-top: 15px;
+      padding: 12px;
+      background: #6d4c41;
+      color: white;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    #liabilitySection {
+      margin-top: 30px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    #liabilitySection h3 {
+      margin-top: 0;
+      text-align: center;
+      color: #a0522d;
+    }
+    #liabilityList {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    #liabilityList li {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #liabilityList li:hover {
+      background-color: #f0e6dc;
+    }
+    #liabilityDetails {
+      margin-top: 15px;
+      padding: 10px;
+      border: 1px solid #d2b48c;
+      border-radius: 6px;
+      background-color: #faf3e6;
+      display: none;
+    }
+    #liabilityDetails label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    #liabilityDetails input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    @media print {
+  /* Hide all interactive elements */
+  .input-group, #splitFields, #liabilitySection,
+  input, select, button, .btn, label {
+    display: none !important;
+  }
+
+  /* Reset general layout for print */
+  body {
+    margin: 0;
+    padding: 20px;
+    font-family: 'Segoe UI', sans-serif;
+    background: white !important;
+    color: #111;
+    box-shadow: none;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  header img {
+    width: 60px;
+    margin-bottom: 8px;
+  }
+
+  h2, h3 {
+    margin: 2px 0;
+    font-weight: 600;
+  }
+
+  p, .total, .discounted, .thankyou {
+    margin: 6px 0;
+    font-size: 14px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 14px;
+  }
+
+  th {
+    background-color: #f0f0f0;
+    border: 1px solid #999;
+    padding: 8px;
+    text-align: left;
+  }
+
+  td {
+    border: 1px solid #ccc;
+    padding: 8px;
+  }
+
+  .total, .discounted {
+    text-align: right;
+    font-size: 15px;
+    font-weight: bold;
+    border-top: 2px solid #555;
+    padding-top: 4px;
+  }
+
+  .thankyou {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .note, .customer {
+    font-style: italic;
+    font-size: 13px;
+  }
+} 
+ </style>
+</head>
+<body>
+
+  <header>
+    <img src="https://dravo08.github.io/Dravo-kholme/IMG_20250721_073902.png" alt="Cafe Logo" />
+    <h2>Cafe Kholme</h2>
+    <h3>Customer Bill</h3>
+  </header>
+
+  <div class="input-group">
+    <input type="number" id="tableNumber" placeholder="Enter Table Number" />
+    <button class="btn" onclick="confirmTable()">Load Bill</button>
+  </div>
+
+  <div id="billContent" style="display:none">
+    <label for="customerNameInput"><strong>Customer Name:</strong></label>
+    <input type="text" id="customerNameInput" placeholder="Enter customer name" />
+
+    <p class="customer"><strong>Customer:</strong> <span id="customerName">N/A</span></p>
+    <p><strong>Table:</strong> <span id="tableOut"></span></p>
+    <p><strong>Date:</strong> <span id="date"></span></p>
+    <p><strong>Time:</strong> <span id="time"></span></p>
+
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Qty</th><th>Total</th></tr>
+      </thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+
+    <p class="total" id="totalText">Total: Rs 0</p>
+
+    <div class="input-group">
+      <input type="number" id="discountInput" placeholder="Enter discount Rs" />
+      <button class="btn" onclick="applyDiscount()">Apply Discount</button>
+    </div>
+
+    <p class="discounted" id="discountedTotal" style="display:none"></p>
+
+    <p><strong>Payment Mode:</strong> <span id="paymentModeDisplay">N/A</span></p>
+    <label for="paymentMode"><strong>Select Payment Mode:</strong></label>
+    <select id="paymentMode">
+      <option value="Cash">Cash</option>
+      <option value="Online">Online</option>
+      <option value="Split">Split (Cash + Online)</option>
+      <option value="Split3">Split (Cash + Online + Liability)</option>
+      <option value="Liability">Liability (Not Paid)</option>
+    </select>
+
+    <div id="splitFields" style="display: none; margin-top: 10px;">
+      <input type="number" id="cashAmount" placeholder="Cash Amount (Rs)" />
+      <input type="number" id="onlineAmount" placeholder="Online Amount (Rs)" />
+    </div>
+
+    <!-- Add Item -->
+    <div class="input-group" style="margin-top: 20px;">
+      <input type="text" id="addItemName" placeholder="Item name" />
+      <input type="number" id="addItemQty" placeholder="Qty" />
+      <input type="number" id="addItemPrice" placeholder="Price" />
+      <button class="btn" onclick="addItemToBill()">➕ Add Item</button>
+    </div>
+
+    <p class="note" id="orderNote"></p>
+    <p class="thankyou">Thank you for visiting!</p>
+
+    <button class="btn" onclick="window.print()">🖨️ Print Bill</button>
+    <button class="btn" onclick="markAsPaid()">✅ Mark as Paid</button>
+    <button class="btn" onclick="voidBill()">❌ Void Bill</button>
+  </div>
+
+  <!-- Liability Section -->
+  <section id="liabilitySection">
+    <h3>Unpaid Liabilities</h3>
+    <input type="text" id="liabilitySearch" placeholder="Search by customer or table..." style="padding:8px; width: 100%; box-sizing: border-box; margin-bottom: 10px;" />
+    <ul id="liabilityList"></ul>
+
+    <div id="liabilityDetails">
+      <h4>Settle Liability</h4>
+      <p><strong>Customer:</strong> <span id="liabCustomer"></span></p>
+      <p><strong>Table:</strong> <span id="liabTable"></span></p>
+      <p><strong>Total Due:</strong> Rs <span id="liabTotal"></span></p>
+
+      <label for="liabSettleAmount">Amount to Settle (Rs):</label>
+      <input type="number" id="liabSettleAmount" min="1" step="1" />
+<label for="liabPaymentMode">Payment Method:</label>
+<select id="liabPaymentMode" style="margin-bottom: 10px; padding: 8px; width: 100%;">
+  <option value="Cash">Cash</option>
+  <option value="Online">Online</option>
+</select>
+      <button class="btn" onclick="settleSelectedLiability()">Settle Liability</button>
+      <button class="btn" style="background:#999;margin-top:8px;" onclick="closeLiabilityPopup()">Cancel</button>
+    </div>
+  </section>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, get, set, remove, onValue, query, orderByChild, startAt, endAt } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvOLYaDb6pQqd4CZDfsWWsvKWDExWJ8A4",
+      authDomain: "kholme-menu1.firebaseapp.com",
+      databaseURL: "https://kholme-menu1-default-rtdb.firebaseio.com",
+      projectId: "kholme-menu1",
+      storageBucket: "kholme-menu1.appspot.com",
+      messagingSenderId: "434798935284",
+      appId: "1:434798935284:web:527ae90b4d4833a30ff2a1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
+    let currentKey = null;
+    let currentOrder = null;
+    let currentTotal = 0;
+    let currentDiscount = 0;
+    let clockInterval = null;
+
+    // Liability selected for settlement
+    let selectedLiabilityKey = null;
+    let selectedLiabilityOrder = null;
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        alert("You must be logged in to access billing.");
+        window.location.href = "bill-login.html";
+      } else {
+        loadLiabilities();
+      }
+    });
+
+    function startClock(timestamp) {
+      if (clockInterval) clearInterval(clockInterval);
+
+      function updateTime() {
+        const now = new Date();
+        const formattedTime = now.toLocaleTimeString();
+        document.getElementById("time").textContent = formattedTime;
+      }
+
+      updateTime();
+      clockInterval = setInterval(updateTime, 1000);
+    }
+
+    function confirmTable() {
+      const tableNumber = document.getElementById("tableNumber").value.trim();
+      if (!tableNumber) return alert("Please enter table number");
+
+      onValue(ref(db, "orders"), (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return (document.getElementById("billContent").style.display = "none");
+
+        let found = false;
+        for (const key in data) {
+          const order = data[key];
+          const hasBar = order.items?.some(i => i.type === "bar");
+          const hasKitchen = order.items?.some(i => i.type === "kitchen");
+
+          let ready = true;
+          if (hasBar && order.status?.bar !== "completed") ready = false;
+          if (hasKitchen && order.status?.kitchen !== "completed") ready = false;
+
+          if (order.tableNumber == tableNumber && ready) {
+            currentKey = key;
+            currentOrder = order;
+            displayBill(order);
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
+          document.getElementById("billContent").style.display = "none";
+          alert("No completed order found for this table.");
+        }
+      });
+    }
+
+    function displayBill(order) {
+      document.getElementById("billContent").style.display = "block";
+      const custNameInput = document.getElementById("customerNameInput");
+      const paymentMode = document.getElementById("paymentMode");
+      const paymentModeDisplay = document.getElementById("paymentModeDisplay");
+      const splitFields = document.getElementById("splitFields");
+
+      custNameInput.value = order.customerName || "";
+      paymentMode.value = order.paymentMode?.mode || "Cash";
+      paymentModeDisplay.textContent = paymentMode.value;
+
+      if (paymentMode.value === "Split" || paymentMode.value === "Split3") {
+        splitFields.style.display = "block";
+      } else {
+        splitFields.style.display = "none";
+      }
+
+      paymentMode.onchange = () => {
+        paymentModeDisplay.textContent = paymentMode.value;
+        if (paymentMode.value === "Split" || paymentMode.value === "Split3") {
+          splitFields.style.display = "block";
+        } else {
+          splitFields.style.display = "none";
+        }
+      };
+
+      document.getElementById("customerName").textContent = custNameInput.value.trim() || "N/A";
+      custNameInput.oninput = () => {
+        document.getElementById("customerName").textContent = custNameInput.value.trim() || "N/A";
+      };
+
+      document.getElementById("tableOut").textContent = order.tableNumber || "";
+      const dateObj = new Date(order.timestamp || Date.now());
+      document.getElementById("date").textContent = dateObj.toLocaleDateString();
+
+      startClock(order.timestamp);
+
+      const itemsBody = document.getElementById("itemsBody");
+      itemsBody.innerHTML = "";
+      currentTotal = 0;
+      currentDiscount = 0;
+
+      if (!order.items || order.items.length === 0) {
+        itemsBody.innerHTML = "<tr><td colspan='3'>No items found.</td></tr>";
+        return;
+      }
+
+      order.items.forEach((item, index) => {
+        const total = item.price * item.quantity;
+        currentTotal += total;
+        itemsBody.innerHTML += `
+          <tr>
+            <td>${item.name}</td>
+            <td>${item.quantity}</td>
+            <td>Rs ${total} 
+              <button style="margin-left:10px; font-size:12px; cursor:pointer;" onclick="removeItem(${index})">❌ Remove</button>
+            </td>
+          </tr>`;
+      });
+
+      document.getElementById("totalText").textContent = `Total: Rs ${currentTotal}`;
+      document.getElementById("discountInput").value = "";
+      document.getElementById("discountedTotal").style.display = "none";
+      document.getElementById("orderNote").textContent = "Note: " + (order.note || "N/A");
+    }
+
+    async function removeItem(index) {
+      if (!currentKey || !currentOrder) return alert("No active order");
+      if (index < 0 || index >= currentOrder.items.length) return alert("Invalid item index");
+
+      currentOrder.items.splice(index, 1);
+
+      try {
+        await set(ref(db, `orders/${currentKey}/items`), currentOrder.items);
+        displayBill(currentOrder);
+      } catch (err) {
+        alert("Failed to remove item: " + err.message);
+      }
+    }
+
+    function applyDiscount() {
+      const discount = parseInt(document.getElementById("discountInput").value) || 0;
+      if (discount < 0 || discount > currentTotal) return alert("Invalid discount value.");
+      currentDiscount = discount;
+      const finalAmount = currentTotal - discount;
+      const discountElem = document.getElementById("discountedTotal");
+      discountElem.style.display = "block";
+      discountElem.textContent = `Discounted Total: Rs ${finalAmount}`;
+    }
+
+    async function markAsPaid() {
+      if (!currentKey || !currentOrder) return alert("No active order loaded");
+
+      const customerNameVal = document.getElementById("customerNameInput").value.trim();
+      const selectedPaymentMode = document.getElementById("paymentMode").value;
+      let paymentDetails = {};
+      let discountedTotal = currentTotal - currentDiscount;
+
+      if (selectedPaymentMode === "Split") {
+        const cash = parseInt(document.getElementById("cashAmount").value) || 0;
+        const online = parseInt(document.getElementById("onlineAmount").value) || 0;
+        if (cash + online !== discountedTotal)
+          return alert(`Split total must be Rs ${discountedTotal}`);
+        paymentDetails = { mode: "Split", cashAmount: cash, onlineAmount: online, received: true };
+      } else if (selectedPaymentMode === "Split3") {
+  const cash = parseInt(document.getElementById("cashAmount").value) || 0;
+  const online = parseInt(document.getElementById("onlineAmount").value) || 0;
+  if (cash + online > discountedTotal)
+    return alert(`Cash + Online must not exceed Rs ${discountedTotal}`);
+  const liability = discountedTotal - cash - online;
+  paymentDetails = {
+    mode: "Split3",       // <-- changed here from "Split"
+    cashAmount: cash,
+    onlineAmount: online,
+    liabilityAmount: liability,
+    received: liability === 0
+  };
+
+      } else if (selectedPaymentMode === "Liability") {
+        // Liability unpaid - don't mark as paid
+        paymentDetails = { mode: "Liability", liabilityAmount: discountedTotal, received: false };
+      } else {
+        paymentDetails = { mode: selectedPaymentMode, received: true };
+      }
+
+      const updatedOrder = {
+        ...currentOrder,
+        customerName: customerNameVal || currentOrder.customerName || "N/A",
+        discountedTotal,
+        discountApplied: currentDiscount,
+        paymentMode: paymentDetails,
+        status: { ...currentOrder.status, paid: selectedPaymentMode !== "Liability" },
+        completedAt: Date.now(),
+      };
+
+      try {
+        await set(ref(db, `completedOrders/${currentKey}`), updatedOrder);
+        await remove(ref(db, `orders/${currentKey}`));
+        alert("Marked as paid and moved to completedOrders.");
+        window.location.reload();
+      } catch (error) {
+        alert("Error updating order: " + error.message);
+      }
+    }
+
+    async function voidBill() {
+      if (!currentKey || !currentOrder) return alert("No active order loaded");
+
+      const confirmed = confirm("Are you sure you want to void this bill?");
+      if (!confirmed) return;
+
+      const reason = prompt("Enter reason for voiding:");
+      if (!reason || reason.trim() === "") return alert("Void reason required.");
+
+      const voidedOrder = {
+        ...currentOrder,
+        voidReason: reason,
+        status: { ...currentOrder.status, voided: true, paid: false },
+        voidedAt: Date.now()
+      };
+
+      try {
+        await set(ref(db, `voidedOrders/${currentKey}`), voidedOrder);
+        await remove(ref(db, `orders/${currentKey}`));
+        alert("Bill voided.");
+        window.location.reload();
+      } catch (err) {
+        alert("Failed to void: " + err.message);
+      }
+    }
+
+    async function addItemToBill() {
+      if (!currentKey || !currentOrder) return alert("No active order");
+
+      const name = document.getElementById("addItemName").value.trim();
+      const qty = parseInt(document.getElementById("addItemQty").value);
+      const price = parseInt(document.getElementById("addItemPrice").value);
+      if (!name || qty <= 0 || price <= 0) return alert("Enter valid item details.");
+
+      const newItem = { name, quantity: qty, price, type: "manual" };
+      const updatedItems = [...(currentOrder.items || []), newItem];
+
+      try {
+        await set(ref(db, `orders/${currentKey}/items`), updatedItems);
+        currentOrder.items = updatedItems;
+        displayBill(currentOrder);
+        document.getElementById("addItemName").value = "";
+        document.getElementById("addItemQty").value = "";
+        document.getElementById("addItemPrice").value = "";
+      } catch (err) {
+        alert("Failed to add item: " + err.message);
+      }
+    }
+
+    // ========== LIABILITY FUNCTIONS ==========
+
+    // Load all unpaid liabilities from completedOrders with paymentMode.mode === "Liability" or liabilityAmount > 0 unpaid
+    async function loadLiabilities() {
+      const liabilityListElem = document.getElementById("liabilityList");
+      liabilityListElem.innerHTML = "<li>Loading...</li>";
+
+      try {
+        const snapshot = await get(ref(db, "completedOrders"));
+        const data = snapshot.val() || {};
+
+        const liabilities = [];
+
+        for (const key in data) {
+          const order = data[key];
+          const payMode = order.paymentMode || {};
+          const unpaidLiability = 
+       (payMode.mode === "Liability" && payMode.received === false) ||
+((payMode.mode === "Split" || payMode.mode === "Split3") && payMode.liabilityAmount > 0 && payMode.received === false);
+          if (unpaidLiability) {
+            liabilities.push({ key, order });
+          }
+        }
+
+        if (liabilities.length === 0) {
+          liabilityListElem.innerHTML = "<li>No unpaid liabilities found.</li>";
+          return;
+        }
+
+        liabilityListElem.innerHTML = "";
+        liabilities.forEach(({ key, order }) => {
+          const custName = order.customerName || "N/A";
+          const tableNum = order.tableNumber || "N/A";
+          const due = order.paymentMode.liabilityAmount || order.discountedTotal || 0;
+          const li = document.createElement("li");
+          li.textContent = `Customer: ${custName} | Table: ${tableNum} | Type: Liability`;
+          li.dataset.key = key;
+          li.style.userSelect = "none";
+          li.onclick = () => selectLiability(key, order);
+          liabilityListElem.appendChild(li);
+        });
+      } catch (error) {
+        liabilityListElem.innerHTML = `<li>Error loading liabilities: ${error.message}</li>`;
+      }
+    }
+
+    // Filter liabilities by search box
+    document.getElementById("liabilitySearch").addEventListener("input", () => {
+      const filter = document.getElementById("liabilitySearch").value.toLowerCase();
+      const listItems = document.querySelectorAll("#liabilityList li");
+      listItems.forEach(li => {
+        if (li.textContent.toLowerCase().includes(filter)) {
+          li.style.display = "";
+        } else {
+          li.style.display = "none";
+        }
+      });
+    });
+
+    function selectLiability(key, order) {
+      selectedLiabilityKey = key;
+      selectedLiabilityOrder = order;
+
+      document.getElementById("liabCustomer").textContent = order.customerName || "N/A";
+      document.getElementById("liabTable").textContent = order.tableNumber || "N/A";
+      const dueAmount = order.paymentMode.liabilityAmount ?? order.discountedTotal ?? 0;
+      document.getElementById("liabTotal").textContent = dueAmount;
+      const settleInput = document.getElementById("liabSettleAmount");
+      settleInput.value = dueAmount;
+      settleInput.max = dueAmount;
+
+      document.getElementById("liabilityDetails").style.display = "block";
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function closeLiabilityPopup() {
+      selectedLiabilityKey = null;
+      selectedLiabilityOrder = null;
+      document.getElementById("liabilityDetails").style.display = "none";
+      document.getElementById("liabSettleAmount").value = "";
+    }
+
+    // Settle the selected liability fully or partially
+    async function settleSelectedLiability() {
+  if (!selectedLiabilityKey || !selectedLiabilityOrder)
+    return alert("No liability selected.");
+
+  const amountToSettle = parseInt(document.getElementById("liabSettleAmount").value);
+  const paymentType = document.getElementById("liabPaymentMode").value;
+  if (isNaN(amountToSettle) || amountToSettle <= 0)
+    return alert("Enter a valid amount.");
+
+  const payment = selectedLiabilityOrder.paymentMode || {};
+  const liabilityAmount = payment.liabilityAmount ?? 0;
+
+  if (amountToSettle > liabilityAmount)
+    return alert("Amount cannot exceed total due.");
+
+  const remainingLiability = liabilityAmount - amountToSettle;
+
+  // Update original order's paymentMode with reduced liability
+  const updatedPaymentMode = {
+    ...payment,
+    liabilityAmount: remainingLiability,
+    received: remainingLiability === 0,
+    mode: "Split",
+  };
+
+  const updatedLiabilityOrder = {
+    ...selectedLiabilityOrder,
+    paymentMode: updatedPaymentMode,
+  };
+
+  const paidOrder = {
+    ...selectedLiabilityOrder,
+    discountedTotal: amountToSettle,
+    paymentMode: {
+      mode: paymentType,
+      received: true,
+    },
+    completedAt: Date.now(),
+  };
+
+  try {
+    // Update the liability with reduced liabilityAmount
+    await set(ref(db, `completedOrders/${selectedLiabilityKey}`), updatedLiabilityOrder);
+
+    // Add a new order for the settled portion
+    const paidKey = `${selectedLiabilityKey}-paid-${Date.now()}`;
+    await set(ref(db, `completedOrders/${paidKey}`), paidOrder);
+
+    alert(`Liability settled for Rs ${amountToSettle}. Remaining due: Rs ${remainingLiability}`);
+
+    closeLiabilityPopup();
+    loadLiabilities();
+  } catch (error) {
+    alert("Failed to settle liability: " + error.message);
+  }
+}
+    // Expose functions to window for inline onclick handlers
+    window.confirmTable = confirmTable;
+    window.applyDiscount = applyDiscount;
+    window.markAsPaid = markAsPaid;
+    window.voidBill = voidBill;
+    window.addItemToBill = addItemToBill;
+    window.removeItem = removeItem;
+    window.settleSelectedLiability = settleSelectedLiability;
+    window.closeLiabilityPopup = closeLiabilityPopup;
+
+  </script>
+</body>
+</html>
