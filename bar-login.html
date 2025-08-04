@@ -123,7 +123,7 @@
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        if (user.email === "kholme@menu.com") {
+        if (user.email === "Cafele@staff.com") {
           localStorage.setItem("role", "kitchen");
           window.location.href = "bar.html";  // Redirect to barpage
         } else {
