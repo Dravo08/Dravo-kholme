@@ -122,8 +122,7 @@
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-
-        if (user.email === "Cafele@staff.com") {
+if (user.email.toLowerCase() === "cafele@staff.com") {
           localStorage.setItem("role", "bill");
           window.location.href = "bill.html";  // Redirect to bill page
         } else {
@@ -142,3 +141,4 @@
 </body>
 
 </html>
+
