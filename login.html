@@ -124,7 +124,7 @@
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        if (user.email === "kholme@owner.com") {
+        if (user.email === "cafele@owner.com") {
           localStorage.setItem("role", "owner");
           window.location.href = "owner.html";  // âœ… Redirect
         } else {
@@ -142,3 +142,4 @@
   </script>
 </body>
 </html>
+
