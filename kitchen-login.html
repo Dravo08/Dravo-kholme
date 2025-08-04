@@ -123,7 +123,7 @@
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        if (user.email === "Cafele@staff.com") {
+        if (user.email.toLowerCase() === "cafele@staff.com") {
           localStorage.setItem("role", "kitchen");
           window.location.href = "kitchen.html";  // Redirect to kitchen page
         } else {
